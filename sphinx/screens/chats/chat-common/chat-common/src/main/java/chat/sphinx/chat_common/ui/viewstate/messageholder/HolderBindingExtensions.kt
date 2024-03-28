@@ -459,6 +459,7 @@ internal inline fun LayoutMessageHolderBinding.setUnsupportedMessageTypeLayout(
                 MessageType.BotRes,
                 MessageType.BotCmd,
                 MessageType.BotInstall,
+                MessageType.ContactKeyRecord,
                 is MessageType.Unknown -> {
                     getString(R.string.placeholder_unsupported_message_type_default)
                 }

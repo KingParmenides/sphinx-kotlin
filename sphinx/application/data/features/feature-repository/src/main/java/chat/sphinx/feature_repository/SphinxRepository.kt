@@ -285,11 +285,11 @@ abstract class SphinxRepository(
                 connectionManagerState.value = ConnectionManagerState.OwnerRegistered(isRestoreAccount)
 
                 if (isRestoreAccount) {
-                    delay(2000L)
-                    connectManager.fetchContactsOnRestoreAccount()
-                    delay(2000L)
+//                    delay(2000L)
+//                    connectManager.fetchContactsOnRestoreAccount()
+//                    delay(2000L)
                     connectManager.fetchFirstMessagesPerKey()
-                    delay(2000L)
+                    delay(5000L)
                     connectManager.fetchMessagesOnRestoreAccount()
                 }
             }
@@ -552,60 +552,67 @@ abstract class SphinxRepository(
                         deleteMqttMessage(replyUuid)
                     }
                 }
+
                 is MessageType.ContactKeyConfirmation -> {
                     saveNewContactRegistered(msgSender)
                 }
+
                 is MessageType.ContactKey -> {
                     saveNewContactRegistered(msgSender)
                 }
+
                 else -> {
-                    val message = msg.toMsg(moshi)
+                    try {
+                        val message = msg.toMsg(moshi)
 
-                    val contactInfo = msgSender.toMsgSender(moshi)
-                    val messageId = MessageId(msgIndex.toLong())
-                    val messageUUID = msgUuid.toMessageUUID() ?: return@launch
-                    val originalUUID = message.originalUuid?.toMessageUUID()
-                    val date = msgTimestamp?.let { DateTime(Date(it)) }
-                    val isSent = (accountOwner.value?.alias?.value == contactInfo.alias)
-                    val msgAmount = message.amount?.milliSatsToSats()
+                        val contactInfo = msgSender.toMsgSender(moshi)
+                        val messageId = MessageId(msgIndex.toLong())
+                        val messageUUID = msgUuid.toMessageUUID() ?: return@launch
+                        val originalUUID = message.originalUuid?.toMessageUUID()
+                        val date = msgTimestamp?.let { DateTime(Date(it)) }
+                        val isSent = (accountOwner.value?.alias?.value == contactInfo.alias)
+                        val msgAmount = message.amount?.milliSatsToSats()
 
-                    val paymentRequest = message.invoice?.toLightningPaymentRequestOrNull()
-                    val bolt11 = paymentRequest?.let { Bolt11.decode(it) }
-                    val paymentHash = paymentRequest?.let {
-                        connectManager.retrievePaymentHash(it.value)?.toLightningPaymentHash()
-                    }
-
-                    if (messageType is MessageType.Purchase.Processing) {
-                        amount?.toSat()?.let { paidAmount ->
-                            sendMediaKeyOnPaidPurchase(
-                                message,
-                                contactInfo,
-                                paidAmount
-                            )
+                        val paymentRequest = message.invoice?.toLightningPaymentRequestOrNull()
+                        val bolt11 = paymentRequest?.let { Bolt11.decode(it) }
+                        val paymentHash = paymentRequest?.let {
+                            connectManager.retrievePaymentHash(it.value)?.toLightningPaymentHash()
                         }
-                    }
 
-                    if (!contactInfo.host.isNullOrEmpty() &&
-                        messageType.isGroupJoin() ||
-                        messageType.isMemberApprove()
-                    ) {
-                        joinTribeOnRestoreAccount(contactInfo)
-                    }
+                        if (messageType is MessageType.Purchase.Processing) {
+                            amount?.toSat()?.let { paidAmount ->
+                                sendMediaKeyOnPaidPurchase(
+                                    message,
+                                    contactInfo,
+                                    paidAmount
+                                )
+                            }
+                        }
 
-                    upsertMqttMessage(
-                        message,
-                        contactInfo,
-                        messageType,
-                        messageUUID,
-                        messageId,
-                        originalUUID,
-                        date,
-                        isSent,
-                        amount?.toSat() ?: msgAmount,
-                        paymentRequest,
-                        paymentHash,
-                        bolt11
-                    )
+                        if (!contactInfo.host.isNullOrEmpty() &&
+                            messageType.isGroupJoin() ||
+                            messageType.isMemberApprove()
+                        ) {
+                            joinTribeOnRestoreAccount(contactInfo)
+                        }
+
+                        upsertMqttMessage(
+                            message,
+                            contactInfo,
+                            messageType,
+                            messageUUID,
+                            messageId,
+                            originalUUID,
+                            date,
+                            isSent,
+                            amount?.toSat() ?: msgAmount,
+                            paymentRequest,
+                            paymentHash,
+                            bolt11
+                        )
+                    } catch (e: Exception) {
+                        LOG.e(TAG, "onMessageReceived: ${e.message}", e)
+                    }
                 }
             }
         }
@@ -620,30 +627,56 @@ abstract class SphinxRepository(
         msgTimestamp: Long?
     ) {
         applicationScope.launch(io) {
-            val message = msg.toMsg(moshi)
-            val msgSender = MsgSender(contactPubKey, null, null, null, true, null, null)
+            try {
+                val defaultMsg = Msg(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null)
 
-            val messageType = msgType.toMessageType()
-            val messageUUID = msgUUID.toMessageUUID() ?: return@launch
-            val messageId = MessageId(msgIndex.toLong())
-            val originalUUID = message.originalUuid?.toMessageUUID()
-            val date = msgTimestamp?.let { DateTime(Date(it)) }
-            val amount = message.amount?.milliSatsToSats()
 
-            upsertMqttMessage(
-                message,
-                msgSender,
-                messageType,
-                messageUUID,
-                messageId,
-                originalUUID,
-                date,
-                true,
-                amount,
-                null,
-                null,
-                null
-            )
+                val msgSender = MsgSender(
+                    contactPubKey,
+                    null,
+                    null,
+                    null,
+                    true,
+                    null,
+                    null
+                )
+
+                val message = if (msg.isNotEmpty()) msg.toMsg(moshi) else defaultMsg
+                val messageType = msgType.toMessageType()
+                val messageUUID = msgUUID.toMessageUUID() ?: return@launch
+                val messageId = MessageId(msgIndex.toLong())
+                val originalUUID = message.originalUuid?.toMessageUUID()
+                val date = msgTimestamp?.let { DateTime(Date(it)) }
+                val amount = message.amount?.milliSatsToSats()
+
+                upsertMqttMessage(
+                    message,
+                    msgSender,
+                    messageType,
+                    messageUUID,
+                    messageId,
+                    originalUUID,
+                    date,
+                    true,
+                    amount,
+                    null,
+                    null,
+                    null
+                )
+            } catch (e: Exception) {
+                LOG.e(TAG, "onMessageSent: ${e.message}", e)
+            }
         }
     }
 
@@ -1032,7 +1065,8 @@ abstract class SphinxRepository(
     }
 
     private suspend fun joinTribeOnRestoreAccount(contactInfo: MsgSender) {
-        networkQueryChat.getTribeInfo(ChatHost(contactInfo.host!!), LightningNodePubKey(contactInfo.pubkey)).collect { loadResponse ->
+        val host = contactInfo.host ?: return
+        networkQueryChat.getTribeInfo(ChatHost(host), LightningNodePubKey(contactInfo.pubkey)).collect { loadResponse ->
             when (loadResponse) {
                 is LoadResponse.Loading -> {}
                 is Response.Error -> {
