@@ -76,7 +76,7 @@ class ConnectManagerImpl(
     private val network = "regtest"
     private var ownerSeed: String? = null
     private var inviteCode: String? = null
-    private var mnemonicWords: List<String>? = null
+    private var restoreMnemonicWords: List<String>? = emptyList()
     private var inviterContact: NewContact? = null
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -118,7 +118,7 @@ class ConnectManagerImpl(
     }
 
     override fun setMnemonicWords(words: List<String>?) {
-        this.mnemonicWords = words
+        this.restoreMnemonicWords = words
     }
 
 
@@ -127,8 +127,8 @@ class ConnectManagerImpl(
         var seed: String? = null
 
         // Check if is account restoration
-        val mnemonic = if (!mnemonicWords.isNullOrEmpty()) {
-            mnemonicWords!!.joinToString(" ").toWalletMnemonic()
+        val mnemonic = if (!restoreMnemonicWords.isNullOrEmpty()) {
+            restoreMnemonicWords!!.joinToString(" ").toWalletMnemonic()
         } else {
             try {
                 val randomBytes = generateRandomBytes(16)
@@ -387,7 +387,7 @@ class ConnectManagerImpl(
                 )
                 handleRunReturn(setUp, client)
 
-                if (mnemonicWords?.isEmpty() == true) {
+                if (restoreMnemonicWords?.isEmpty() == true) {
 
                     val fetchMessages = fetchMsgs(
                         ownerSeed!!,
@@ -893,7 +893,7 @@ class ConnectManagerImpl(
             val parts = myContactInfo.split("_", limit = 2)
             val okKey = parts.getOrNull(0)
             val routeHint = parts.getOrNull(1)
-            val isRestoreAccount = mnemonicWords != null
+            val isRestoreAccount = restoreMnemonicWords != null
 
             if (okKey != null && routeHint != null) {
                 notifyListeners {

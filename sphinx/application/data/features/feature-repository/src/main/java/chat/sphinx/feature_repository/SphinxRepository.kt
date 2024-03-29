@@ -69,7 +69,7 @@ import chat.sphinx.conceptcoredb.*
 import chat.sphinx.example.concept_connect_manager.ConnectManager
 import chat.sphinx.example.concept_connect_manager.ConnectManagerListener
 import chat.sphinx.example.concept_connect_manager.model.OwnerInfo
-import chat.sphinx.example.wrapper_mqtt.LastReadMessages.Companion.toLastReadMessages
+import chat.sphinx.example.wrapper_mqtt.LastReadMessages.Companion.toLastReadMap
 import chat.sphinx.example.wrapper_mqtt.NewCreateTribe.Companion.toNewCreateTribe
 import chat.sphinx.example.wrapper_mqtt.TribeMembersResponse.Companion.toTribeMembersList
 import chat.sphinx.example.wrapper_mqtt.toLspChannelInfo
@@ -828,8 +828,9 @@ abstract class SphinxRepository(
     override fun onLastReadMessages(lastReadMessages: String) {
         applicationScope.launch {
             val queries = coreDB.getSphinxDatabaseQueries()
-            val lastReadMessagesMap = lastReadMessages.toLastReadMessages(moshi)
-            val pubKeys = lastReadMessagesMap?.values?.keys
+
+            val lastReadMessagesMap = lastReadMessages.toLastReadMap(moshi)
+            val pubKeys = lastReadMessagesMap?.keys
 
             val contactPubkey = pubKeys?.map { it.toLightningNodePubKey() }
             val tribePubKey = pubKeys?.map { it.toChatUUID() }
@@ -841,26 +842,30 @@ abstract class SphinxRepository(
             val chatIdToLastMsgIndexMap = mutableMapOf<ChatId, MessageId>()
 
             contacts?.forEach { contact ->
-                val lastMsgIndex = lastReadMessagesMap.values?.get(contact.node_pub_key?.value)
+                val lastMsgIndex = lastReadMessagesMap.get(contact.node_pub_key?.value)
                 if (lastMsgIndex != null) {
                     chatIdToLastMsgIndexMap[ChatId(contact.id.value)] = MessageId(lastMsgIndex)
                 }
             }
 
             tribes?.forEach { tribe ->
-                val lastMsgIndex = lastReadMessagesMap.values?.get(tribe.uuid.value)
+                val lastMsgIndex = lastReadMessagesMap.get(tribe.uuid.value)
                 if (lastMsgIndex != null) {
                     chatIdToLastMsgIndexMap[tribe.id] = MessageId(lastMsgIndex)
                 }
             }
 
-            chatLock.withLock {
-                messageLock.withLock {
-                    queries.transaction {
-                        chatIdToLastMsgIndexMap.forEach { (chatId, lastMsgIndex) ->
-                            queries.messageUpdateSeenByChatIdAndId(chatId, lastMsgIndex)
-                        }
+            messageLock.withLock {
+                queries.transaction {
+                    chatIdToLastMsgIndexMap.forEach { (chatId, lastMsgIndex) ->
+                        queries.messageUpdateSeenByChatIdAndId(chatId, lastMsgIndex)
                     }
+                }
+            }
+
+            chatLock.withLock {
+                chatIdToLastMsgIndexMap.forEach { (chatId, lastMsgIndex) ->
+                    queries.chatUpdateSeenByLastMessage(chatId, lastMsgIndex)
                 }
             }
         }
