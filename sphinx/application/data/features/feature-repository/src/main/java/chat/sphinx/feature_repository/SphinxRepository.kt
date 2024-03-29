@@ -283,11 +283,12 @@ abstract class SphinxRepository(
                 createOwner(okKey, routeHint, scid)
 
                 connectionManagerState.value = ConnectionManagerState.OwnerRegistered(isRestoreAccount)
+                delay(500L)
 
                 if (isRestoreAccount) {
 //                    delay(2000L)
 //                    connectManager.fetchContactsOnRestoreAccount()
-//                    delay(2000L)
+                    delay(2000L)
                     connectManager.fetchFirstMessagesPerKey()
                     delay(5000L)
                     connectManager.fetchMessagesOnRestoreAccount()
@@ -1605,7 +1606,7 @@ abstract class SphinxRepository(
                         emit(loadResponse)
                     }
                     is Response.Success -> {
-                        emit(processChatDtos(loadResponse.value))
+//                        emit(processChatDtos(loadResponse.value))
                     }
                     is LoadResponse.Loading -> {
                         emit(loadResponse)
@@ -1890,10 +1891,10 @@ abstract class SphinxRepository(
 
                                 }
 
-                                processChatsResponse = processChatDtos(
-                                    loadResponse.value.chats,
-                                    contactMap,
-                                )
+//                                processChatsResponse = processChatDtos(
+//                                    loadResponse.value.chats,
+//                                    contactMap,
+//                                )
                             }.join()
 
                             error?.let {
@@ -1999,10 +2000,10 @@ abstract class SphinxRepository(
                                         }
                                     }
 
-                                    processChatsResponse = processChatDtos(
-                                        loadResponse.value.chats,
-                                        contactMap,
-                                    )
+//                                    processChatsResponse = processChatDtos(
+//                                        loadResponse.value.chats,
+//                                        contactMap,
+//                                    )
 
                                     inviteLock.withLock {
                                         contactLock.withLock {

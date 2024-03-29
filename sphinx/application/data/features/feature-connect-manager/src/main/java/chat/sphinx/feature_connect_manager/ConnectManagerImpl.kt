@@ -43,6 +43,7 @@ import uniffi.sphinxrs.getTribeManagementTopic
 import uniffi.sphinxrs.handle
 import uniffi.sphinxrs.initialSetup
 import uniffi.sphinxrs.joinTribe
+import uniffi.sphinxrs.listContacts
 import uniffi.sphinxrs.listTribeMembers
 import uniffi.sphinxrs.makeInvite
 import uniffi.sphinxrs.makeMediaToken
@@ -758,6 +759,10 @@ class ConnectManagerImpl(
 
     override fun readMessage(contactPubKey: String, messageIndex: Long) {
         try {
+
+            val contacts = listContacts(getCurrentUserState())
+            Log.e("MQTT_MESSAGES", "readMessage contacts ${contacts}")
+
             val readMessage = read(
                 ownerSeed!!,
                 getTimestampInMilliseconds(),
