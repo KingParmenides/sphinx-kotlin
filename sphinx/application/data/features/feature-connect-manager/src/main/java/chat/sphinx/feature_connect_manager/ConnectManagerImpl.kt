@@ -37,6 +37,7 @@ import uniffi.sphinxrs.RunReturn
 import uniffi.sphinxrs.addContact
 import uniffi.sphinxrs.codeFromInvite
 import uniffi.sphinxrs.fetchMsgs
+import uniffi.sphinxrs.getMsgsCounts
 import uniffi.sphinxrs.getReads
 import uniffi.sphinxrs.getSubscriptionTopic
 import uniffi.sphinxrs.getTribeManagementTopic
@@ -696,6 +697,19 @@ class ConnectManagerImpl(
         }
     }
 
+    override fun getAllMessagesCount() {
+        try {
+            val messageAmount = getMsgsCounts(
+                ownerSeed!!,
+                getTimestampInMilliseconds(),
+                getCurrentUserState()
+            )
+            handleRunReturn(messageAmount, mqttClient!!)
+        } catch (e: Exception) {
+            Log.e("MQTT_MESSAGES", "getAllMessagesCount ${e.message}")
+        }
+    }
+
     override fun generateMediaToken(
         contactPubKey: String,
         muid: String,
@@ -759,9 +773,8 @@ class ConnectManagerImpl(
 
     override fun readMessage(contactPubKey: String, messageIndex: Long) {
         try {
-
             val contacts = listContacts(getCurrentUserState())
-            Log.e("MQTT_MESSAGES", "readMessage contacts ${contacts}")
+            Log.d("MQTT_MESSAGES", "readMessage contacts ${contacts}")
 
             val readMessage = read(
                 ownerSeed!!,
@@ -893,7 +906,7 @@ class ConnectManagerImpl(
             val parts = myContactInfo.split("_", limit = 2)
             val okKey = parts.getOrNull(0)
             val routeHint = parts.getOrNull(1)
-            val isRestoreAccount = restoreMnemonicWords != null
+            val isRestoreAccount = restoreMnemonicWords?.isNotEmpty() == true
 
             if (okKey != null && routeHint != null) {
                 notifyListeners {
@@ -934,6 +947,14 @@ class ConnectManagerImpl(
             )
 
             Log.d("MQTT_MESSAGES", "=> inviterInfo $inviterInfo")
+        }
+
+        rr.msgsCounts?.let { msgsCounts ->
+            Log.d("MQTT_MESSAGES", "=> msgsCounts $msgsCounts")
+        }
+
+        rr.msgsTotal?.let { msgsTotal ->
+            Log.d("MQTT_MESSAGES", "=> msgsTotal $msgsTotal")
         }
 
         rr.lastRead?.let { lastRead ->

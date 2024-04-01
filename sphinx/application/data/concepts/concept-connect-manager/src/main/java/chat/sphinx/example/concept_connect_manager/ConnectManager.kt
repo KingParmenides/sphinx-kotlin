@@ -88,6 +88,8 @@ abstract class ConnectManager {
 //    abstract fun fetchContactsOnRestoreAccount()
     abstract fun fetchMessagesOnRestoreAccount()
     abstract fun fetchFirstMessagesPerKey()
+
+    abstract fun getAllMessagesCount()
 }
 
 interface ConnectManagerListener {
