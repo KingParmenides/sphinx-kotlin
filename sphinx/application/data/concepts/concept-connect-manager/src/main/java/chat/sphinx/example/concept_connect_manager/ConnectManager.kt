@@ -80,7 +80,6 @@ abstract class ConnectManager {
     )
 
     abstract fun getReadMessages()
-
     abstract fun retrieveLspIp(): String?
     abstract fun addListener(listener: ConnectManagerListener): Boolean
     abstract fun removeListener(listener: ConnectManagerListener): Boolean
@@ -88,7 +87,6 @@ abstract class ConnectManager {
 //    abstract fun fetchContactsOnRestoreAccount()
     abstract fun fetchMessagesOnRestoreAccount()
     abstract fun fetchFirstMessagesPerKey()
-
     abstract fun getAllMessagesCount()
 }
 
@@ -115,25 +113,20 @@ interface ConnectManagerListener {
         msgTimestamp: Long?,
     )
 
+    fun onRestoreContacts(contacts: List<String?>)
+
     fun onNewTribe(newTribe: String)
-
     fun onTribeMembersList(tribeMembers: String)
-
     fun onMessageUUID(msgUUID: String, provisionalId: Long)
-
     fun onUpdateUserState(userState: String)
-
     fun onDeleteUserState(userState: List<String>)
-
     fun onSignedChallenge(sign: String)
-
     fun onNewBalance(balance: Long)
-
     fun onNetworkStatusChange(isConnected: Boolean)
     fun listenToOwnerCreation(callback: () -> Unit)
     fun onNewInviteCreated(inviteString: String)
-
     fun onLastReadMessages(lastReadMessages: String)
+    fun onMessagesCounts(msgsCounts: String)
 
 
 }

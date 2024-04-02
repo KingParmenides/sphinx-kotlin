@@ -2,6 +2,7 @@ package chat.sphinx.concept_repository_connect_manager
 
 import chat.sphinx.concept_repository_connect_manager.model.ConnectionManagerState
 import chat.sphinx.concept_repository_connect_manager.model.NetworkStatus
+import chat.sphinx.concept_repository_connect_manager.model.RestoreProcessState
 import chat.sphinx.wrapper_contact.NewContact
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -9,6 +10,7 @@ interface ConnectManagerRepository {
 
     val connectionManagerState: MutableStateFlow<ConnectionManagerState?>
     val networkStatus: MutableStateFlow<NetworkStatus>
+    val restoreProcessState: MutableStateFlow<RestoreProcessState?>
 
     fun createOwnerAccount(lspIp: String)
     fun createContact(contact: NewContact)
@@ -32,5 +34,6 @@ interface ConnectManagerRepository {
         tribePubKey: String
     )
     suspend fun updateLspAndOwner(data: String) {}
+    fun startRestoreProcess()
 
 }

@@ -50,6 +50,7 @@ import chat.sphinx.concept_repository_chat.model.CreateTribe
 import chat.sphinx.concept_repository_connect_manager.ConnectManagerRepository
 import chat.sphinx.concept_repository_connect_manager.model.ConnectionManagerState
 import chat.sphinx.concept_repository_connect_manager.model.NetworkStatus
+import chat.sphinx.concept_repository_connect_manager.model.RestoreProcessState
 import chat.sphinx.concept_repository_contact.ContactRepository
 import chat.sphinx.concept_repository_dashboard.RepositoryDashboard
 import chat.sphinx.concept_repository_feed.FeedRepository
@@ -70,6 +71,7 @@ import chat.sphinx.example.concept_connect_manager.ConnectManager
 import chat.sphinx.example.concept_connect_manager.ConnectManagerListener
 import chat.sphinx.example.concept_connect_manager.model.OwnerInfo
 import chat.sphinx.example.wrapper_mqtt.LastReadMessages.Companion.toLastReadMap
+import chat.sphinx.example.wrapper_mqtt.MsgsCounts.Companion.toMsgsCounts
 import chat.sphinx.example.wrapper_mqtt.NewCreateTribe.Companion.toNewCreateTribe
 import chat.sphinx.example.wrapper_mqtt.TribeMembersResponse.Companion.toTribeMembersList
 import chat.sphinx.example.wrapper_mqtt.toLspChannelInfo
@@ -261,6 +263,10 @@ abstract class SphinxRepository(
         MutableStateFlow(NetworkStatus.Loading)
     }
 
+    override val restoreProcessState: MutableStateFlow<RestoreProcessState?> by lazy {
+        MutableStateFlow(null)
+    }
+
     init {
         connectManager.addListener(this)
         memeServerTokenHandler.addListener(this)
@@ -283,15 +289,10 @@ abstract class SphinxRepository(
                 createOwner(okKey, routeHint, scid)
 
                 connectionManagerState.value = ConnectionManagerState.OwnerRegistered(isRestoreAccount)
-                delay(500L)
+                delay(2000L)
 
                 if (isRestoreAccount) {
-//                    delay(2000L)
-//                    connectManager.fetchContactsOnRestoreAccount()
-                    delay(2000L)
-                    connectManager.fetchFirstMessagesPerKey()
-                    delay(5000L)
-                    connectManager.fetchMessagesOnRestoreAccount()
+                    startRestoreProcess()
                 }
             }
         }
@@ -545,25 +546,25 @@ abstract class SphinxRepository(
         msgTimestamp: Long?,
     ) {
         applicationScope.launch(io) {
-            val messageType = msgType.toMessageType()
+            try {
+                val messageType = msgType.toMessageType()
 
-            when (messageType) {
-                is MessageType.Delete -> {
-                    msg.toMsg(moshi).replyUuid?.toMessageUUID()?.let { replyUuid ->
-                        deleteMqttMessage(replyUuid)
+                when (messageType) {
+                    is MessageType.Delete -> {
+                        msg.toMsg(moshi).replyUuid?.toMessageUUID()?.let { replyUuid ->
+                            deleteMqttMessage(replyUuid)
+                        }
                     }
-                }
 
-                is MessageType.ContactKeyConfirmation -> {
-                    saveNewContactRegistered(msgSender)
-                }
+                    is MessageType.ContactKeyConfirmation -> {
+                        saveNewContactRegistered(msgSender)
+                    }
 
-                is MessageType.ContactKey -> {
-                    saveNewContactRegistered(msgSender)
-                }
+                    is MessageType.ContactKey -> {
+                        saveNewContactRegistered(msgSender)
+                    }
 
-                else -> {
-                    try {
+                    else -> {
                         val message = msg.toMsg(moshi)
 
                         val contactInfo = msgSender.toMsgSender(moshi)
@@ -611,10 +612,12 @@ abstract class SphinxRepository(
                             paymentHash,
                             bolt11
                         )
-                    } catch (e: Exception) {
-                        LOG.e(TAG, "onMessageReceived: ${e.message}", e)
                     }
+
+
                 }
+            } catch(e: Exception) {
+                LOG.e(TAG, "onMessageReceived: ${e.message}", e)
             }
         }
     }
@@ -678,6 +681,29 @@ abstract class SphinxRepository(
             } catch (e: Exception) {
                 LOG.e(TAG, "onMessageSent: ${e.message}", e)
             }
+        }
+    }
+
+    override fun onRestoreContacts(contacts: List<String?>) {
+        val contactList = contacts.mapNotNull { contact ->
+            try {
+                contact?.toMsgSender(moshi)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        val newContactList = contactList.map { contactInfo ->
+            NewContact(
+                contactAlias = contactInfo.alias?.toContactAlias(),
+                lightningNodePubKey = contactInfo.pubkey.toLightningNodePubKey(),
+                lightningRouteHint = null,
+                photoUrl = contactInfo.photo_url?.toPhotoUrl(),
+                confirmed = contactInfo.confirmed,
+                null,
+                inviteCode = contactInfo.code,
+                invitePrice = null
+            )
         }
     }
 
@@ -868,6 +894,34 @@ abstract class SphinxRepository(
                     queries.chatUpdateSeenByLastMessage(chatId, lastMsgIndex)
                 }
             }
+        }
+    }
+
+    override fun onMessagesCounts(msgsCounts: String) {
+        try {
+            msgsCounts.toMsgsCounts(moshi)?.let {
+                restoreProcessState.value = RestoreProcessState.MessagesCounts(it)
+            }
+        } catch (e: Exception) {
+            LOG.e(TAG, "onMessagesCounts: ${e.message}", e)
+        }
+    }
+
+    override fun startRestoreProcess() {
+        applicationScope.launch {
+            connectManager.getAllMessagesCount()
+
+            restoreProcessState.asStateFlow().collect{ restoreProcessState ->
+                when (restoreProcessState) {
+                    is RestoreProcessState.MessagesCounts -> {
+                        connectManager.fetchFirstMessagesPerKey()
+//                        delay(7000L)
+//                        connectManager.fetchMessagesOnRestoreAccount()
+                    }
+                }
+            }
+//                    connectManager.fetchFirstMessagesPerKey()
+//                    connectManager.fetchMessagesOnRestoreAccount()
         }
     }
 

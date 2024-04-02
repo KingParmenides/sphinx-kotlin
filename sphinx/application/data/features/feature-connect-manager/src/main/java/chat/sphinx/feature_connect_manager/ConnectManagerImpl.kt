@@ -36,7 +36,6 @@ import org.json.JSONObject
 import uniffi.sphinxrs.RunReturn
 import uniffi.sphinxrs.addContact
 import uniffi.sphinxrs.codeFromInvite
-import uniffi.sphinxrs.fetchMsgs
 import uniffi.sphinxrs.getMsgsCounts
 import uniffi.sphinxrs.getReads
 import uniffi.sphinxrs.getSubscriptionTopic
@@ -390,17 +389,17 @@ class ConnectManagerImpl(
 
                 if (restoreMnemonicWords?.isEmpty() == true) {
 
-                    val fetchMessages = fetchMsgs(
-                        ownerSeed!!,
-                        getTimestampInMilliseconds(),
-                        getCurrentUserState(),
-                        ownerInfoStateFlow.value?.messageLastIndex?.plus(1)?.toULong()
-                            ?: 0.toULong(),
-                        100.toUInt()
-                    )
-                    handleRunReturn(fetchMessages, mqttClient!!)
-
-                    getReadMessages()
+//                    val fetchMessages = fetchMsgs(
+//                        ownerSeed!!,
+//                        getTimestampInMilliseconds(),
+//                        getCurrentUserState(),
+//                        ownerInfoStateFlow.value?.messageLastIndex?.plus(1)?.toULong()
+//                            ?: 0.toULong(),
+//                        100.toUInt()
+//                    )
+//                    handleRunReturn(fetchMessages, mqttClient!!)
+//
+//                    getReadMessages()
                 }
 
                 if (inviterContact != null) {
@@ -665,12 +664,13 @@ class ConnectManagerImpl(
 
     override fun fetchMessagesOnRestoreAccount() {
         try {
+            Log.e("MQTT_MESSAGES", "se ejecutó fetchMessagesOnRestoreAccount")
             val fetchMessages = uniffi.sphinxrs.fetchMsgsBatch(
                 ownerSeed!!,
                 getTimestampInMilliseconds(),
                 getCurrentUserState(),
                 0.toULong(),
-                50.toUInt(),
+                250.toUInt(),
                 false,
                 true
             )
@@ -687,7 +687,7 @@ class ConnectManagerImpl(
                 getTimestampInMilliseconds(),
                 getCurrentUserState(),
                 0.toULong(),
-                50.toUInt(),
+                null,
                 false,
                 true
             )
@@ -853,36 +853,44 @@ class ConnectManagerImpl(
         // Process each message in the new msgs array
         rr.msgs.forEach { msg ->
 
-            // Handling sent messages
-            msg.sentTo?.let { sentTo ->
+            // Handle restore contactas
+            if (restoreMnemonicWords != null && rr.msgs.any { it.type == 33.toUByte() }) {
+                val contactsToRestore = rr.msgs.filter { it.type == 33.toUByte() }.map { it.sender }
                 notifyListeners {
-                    onMessageSent(
-                        msg.message.orEmpty(),
-                        sentTo,
-                        msg.type?.toInt() ?: 0,
-                        msg.uuid.orEmpty(),
-                        msg.index.orEmpty(),
-                        msg.timestamp?.toLong()
-                    )
+                    onRestoreContacts(contactsToRestore)
                 }
-                Log.d("MQTT_MESSAGES", "Sent message to $sentTo")
             }
-
-            // Handling received messages
-            msg.sender?.let { sender ->
-                notifyListeners {
-
-                    onMessageReceived(
-                        msg.message.orEmpty(),
-                        sender,
-                        msg.type?.toInt() ?: 0,
-                        msg.uuid.orEmpty(),
-                        msg.index.orEmpty(),
-                        msg.msat?.let { convertMillisatsToSats(it) },
-                        msg.timestamp?.toLong()
-                    )
+            else {
+                // Handling sent messages
+                msg.sentTo?.let { sentTo ->
+                    notifyListeners {
+                        onMessageSent(
+                            msg.message.orEmpty(),
+                            sentTo,
+                            msg.type?.toInt() ?: 0,
+                            msg.uuid.orEmpty(),
+                            msg.index.orEmpty(),
+                            msg.timestamp?.toLong()
+                        )
+                    }
+                    Log.d("MQTT_MESSAGES", "Sent message to $sentTo")
                 }
-                Log.d("MQTT_MESSAGES", "Received message from $sender")
+
+                // Handling received messages
+                msg.sender?.let { sender ->
+                    notifyListeners {
+                        onMessageReceived(
+                            msg.message.orEmpty(),
+                            sender,
+                            msg.type?.toInt() ?: 0,
+                            msg.uuid.orEmpty(),
+                            msg.index.orEmpty(),
+                            msg.msat?.let { convertMillisatsToSats(it) },
+                            msg.timestamp?.toLong()
+                        )
+                    }
+                    Log.d("MQTT_MESSAGES", "Received message from $sender")
+                }
             }
         }
 
@@ -950,6 +958,9 @@ class ConnectManagerImpl(
         }
 
         rr.msgsCounts?.let { msgsCounts ->
+            notifyListeners {
+                onMessagesCounts(msgsCounts)
+            }
             Log.d("MQTT_MESSAGES", "=> msgsCounts $msgsCounts")
         }
 
