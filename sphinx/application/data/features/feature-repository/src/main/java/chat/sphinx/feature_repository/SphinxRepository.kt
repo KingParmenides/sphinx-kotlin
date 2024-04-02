@@ -685,25 +685,31 @@ abstract class SphinxRepository(
     }
 
     override fun onRestoreContacts(contacts: List<String?>) {
-        val contactList = contacts.mapNotNull { contact ->
-            try {
-                contact?.toMsgSender(moshi)
-            } catch (e: Exception) {
-                null
+        applicationScope.launch {
+            val contactList = contacts.mapNotNull { contact ->
+                try {
+                    contact?.toMsgSender(moshi)
+                } catch (e: Exception) {
+                    null
+                }
             }
-        }
 
-        val newContactList = contactList.map { contactInfo ->
-            NewContact(
-                contactAlias = contactInfo.alias?.toContactAlias(),
-                lightningNodePubKey = contactInfo.pubkey.toLightningNodePubKey(),
-                lightningRouteHint = null,
-                photoUrl = contactInfo.photo_url?.toPhotoUrl(),
-                confirmed = contactInfo.confirmed,
-                null,
-                inviteCode = contactInfo.code,
-                invitePrice = null
-            )
+            val newContactList = contactList.map { contactInfo ->
+                NewContact(
+                    contactAlias = contactInfo.alias?.toContactAlias(),
+                    lightningNodePubKey = contactInfo.pubkey.toLightningNodePubKey(),
+                    lightningRouteHint = null,
+                    photoUrl = contactInfo.photo_url?.toPhotoUrl(),
+                    confirmed = contactInfo.confirmed,
+                    null,
+                    inviteCode = contactInfo.code,
+                    invitePrice = null
+                )
+            }
+
+            newContactList.forEach {
+                createNewContact(it)
+            }
         }
     }
 
