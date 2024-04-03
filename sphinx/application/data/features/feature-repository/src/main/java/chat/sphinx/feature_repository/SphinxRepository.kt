@@ -71,6 +71,7 @@ import chat.sphinx.example.concept_connect_manager.ConnectManager
 import chat.sphinx.example.concept_connect_manager.ConnectManagerListener
 import chat.sphinx.example.concept_connect_manager.model.OwnerInfo
 import chat.sphinx.example.wrapper_mqtt.LastReadMessages.Companion.toLastReadMap
+import chat.sphinx.example.wrapper_mqtt.MsgsCounts
 import chat.sphinx.example.wrapper_mqtt.MsgsCounts.Companion.toMsgsCounts
 import chat.sphinx.example.wrapper_mqtt.NewCreateTribe.Companion.toNewCreateTribe
 import chat.sphinx.example.wrapper_mqtt.TribeMembersResponse.Companion.toTribeMembersList
@@ -289,7 +290,7 @@ abstract class SphinxRepository(
                 createOwner(okKey, routeHint, scid)
 
                 connectionManagerState.value = ConnectionManagerState.OwnerRegistered(isRestoreAccount)
-                delay(2000L)
+                delay(1000L)
 
                 if (isRestoreAccount) {
                     startRestoreProcess()
@@ -712,6 +713,8 @@ abstract class SphinxRepository(
             }
 
             insertRestoredContacts(newContactList)
+
+            restoreProcessState.value = RestoreProcessState.RestoreMessages
         }
     }
 
@@ -920,19 +923,21 @@ abstract class SphinxRepository(
 
     override fun startRestoreProcess() {
         applicationScope.launch(mainImmediate) {
+            var msgCounts: MsgsCounts? = null
             connectManager.getAllMessagesCount()
 
             restoreProcessState.asStateFlow().collect{ restoreProcessState ->
                 when (restoreProcessState) {
                     is RestoreProcessState.MessagesCounts -> {
+                        msgCounts = restoreProcessState.msgsCounts
                         connectManager.fetchFirstMessagesPerKey()
-//                        delay(5000L)
-//                        connectManager.fetchMessagesOnRestoreAccount()
                     }
+                    is RestoreProcessState.RestoreMessages -> {
+                        connectManager.fetchMessagesOnRestoreAccount(msgCounts?.total_highest_index)
+                    }
+                    else -> {}
                 }
             }
-//                    connectManager.fetchFirstMessagesPerKey()
-//                    connectManager.fetchMessagesOnRestoreAccount()
         }
     }
 

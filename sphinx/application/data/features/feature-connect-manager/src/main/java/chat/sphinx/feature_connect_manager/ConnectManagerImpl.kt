@@ -13,15 +13,9 @@ import chat.sphinx.wrapper_lightning.toWalletMnemonic
 import chat.sphinx.wrapper_message.MessageType
 import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPack
 import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPackDynamicSerializer
-import io.matthewnelson.concept_coroutines.CoroutineDispatchers
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import okio.base64.encodeBase64
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
@@ -338,6 +332,8 @@ class ConnectManagerImpl: ConnectManager()
             }
 
             Log.d("MQTT_MESSAGES", " this is handle ${runReturn}")
+            Log.d("MQTT_MESSAGES", " MSG size ${runReturn.msgs.size}")
+            Log.d("MQTT_MESSAGES", " MSG LAST ${runReturn.msgs.lastOrNull()}")
         }
     }
 
@@ -645,16 +641,16 @@ class ConnectManagerImpl: ConnectManager()
 //        }
 //    }
 
-    override fun fetchMessagesOnRestoreAccount() {
+    override fun fetchMessagesOnRestoreAccount(totalHighestIndex: Long?) {
         try {
             Log.e("MQTT_MESSAGES", "se ejecutó fetchMessagesOnRestoreAccount")
             val fetchMessages = uniffi.sphinxrs.fetchMsgsBatch(
                 ownerSeed!!,
                 getTimestampInMilliseconds(),
                 getCurrentUserState(),
-                0.toULong(),
+                totalHighestIndex?.toULong() ?: 0.toULong(),
                 250.toUInt(),
-                false,
+                true,
                 true
             )
             handleRunReturn(fetchMessages, mqttClient!!)
