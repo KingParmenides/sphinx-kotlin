@@ -65,10 +65,7 @@ import java.util.Calendar
 import kotlin.math.min
 import kotlin.math.pow
 
-class ConnectManagerImpl(
-    dispatchers: CoroutineDispatchers
-): ConnectManager(),
-    CoroutineDispatchers by dispatchers
+class ConnectManagerImpl: ConnectManager()
 {
     private var mixerIp: String? = null
     private var walletMnemonic: WalletMnemonic? = null
@@ -78,7 +75,6 @@ class ConnectManagerImpl(
     private var inviteCode: String? = null
     private var restoreMnemonicWords: List<String>? = emptyList()
     private var inviterContact: NewContact? = null
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val _ownerInfoStateFlow: MutableStateFlow<OwnerInfo?> by lazy {
         MutableStateFlow(null)
@@ -88,27 +84,25 @@ class ConnectManagerImpl(
 
     // Key Generation and Management
     override fun createAccount(lspIp: String) {
-        coroutineScope.launch {
-            mixerIp = lspIp
+        mixerIp = lspIp
 
-            val seed = generateMnemonic()
-            val now = getTimestampInMilliseconds()
+        val seed = generateMnemonic()
+        val now = getTimestampInMilliseconds()
 
-            seed.first?.let { firstSeed ->
-                val xPub = generateXPub(firstSeed, now, network)
-                val sig = rootSignMs(firstSeed, now, network)
-                ownerSeed = firstSeed
+        seed.first?.let { firstSeed ->
+            val xPub = generateXPub(firstSeed, now, network)
+            val sig = rootSignMs(firstSeed, now, network)
+            ownerSeed = firstSeed
 
-                if (xPub != null) {
-                    var invite: RunReturn? = null
+            if (xPub != null) {
+                var invite: RunReturn? = null
 
-                    if (inviteCode != null) {
-                        invite = processInvite(ownerSeed!!, now, getCurrentUserState(), inviteCode!!)
-                        mixerIp = invite.lspHost
-                    }
-
-                    connectToMQTT(mixerIp!!, xPub, now, sig, invite)
+                if (inviteCode != null) {
+                    invite = processInvite(ownerSeed!!, now, getCurrentUserState(), inviteCode!!)
+                    mixerIp = invite.lspHost
                 }
+
+                connectToMQTT(mixerIp!!, xPub, now, sig, invite)
             }
         }
     }
@@ -120,7 +114,6 @@ class ConnectManagerImpl(
     override fun setMnemonicWords(words: List<String>?) {
         this.restoreMnemonicWords = words
     }
-
 
     @OptIn(ExperimentalUnsignedTypes::class)
     private fun generateMnemonic(): Pair<String?, WalletMnemonic?> {
@@ -167,29 +160,27 @@ class ConnectManagerImpl(
     override fun createContact(
         contact: NewContact
     ) {
-        coroutineScope.launch {
-            val now = getTimestampInMilliseconds()
+        val now = getTimestampInMilliseconds()
 
-            try {
-                val runReturn = addContact(
-                    ownerSeed!!,
-                    now,
-                    getCurrentUserState(),
-                    contact.lightningNodePubKey?.value!!,
-                    contact.lightningRouteHint?.value!!,
-                    ownerInfoStateFlow.value?.alias ?: "",
-                    ownerInfoStateFlow.value?.picture ?: "",
-                    3000.toULong(),
-                    contact.inviteCode
-                )
+        try {
+            val runReturn = addContact(
+                ownerSeed!!,
+                now,
+                getCurrentUserState(),
+                contact.lightningNodePubKey?.value!!,
+                contact.lightningRouteHint?.value!!,
+                ownerInfoStateFlow.value?.alias ?: "",
+                ownerInfoStateFlow.value?.picture ?: "",
+                3000.toULong(),
+                contact.inviteCode
+            )
 
-                handleRunReturn(
-                    runReturn,
-                    mqttClient!!
-                )
-            } catch (e: Exception) {
-                Log.e("MQTT_MESSAGES", "add contact excp $e")
-            }
+            handleRunReturn(
+                runReturn,
+                mqttClient!!
+            )
+        } catch (e: Exception) {
+            Log.e("MQTT_MESSAGES", "add contact excp $e")
         }
     }
 
@@ -200,46 +191,43 @@ class ConnectManagerImpl(
         mnemonicWords: WalletMnemonic,
         ownerInfo: OwnerInfo
     ) {
-        coroutineScope.launch {
+        val seed = try {
+            mnemonicToSeed(mnemonicWords.value)
+        } catch (e: Exception) {
+            null
+        }
 
-            val seed = try {
-                mnemonicToSeed(mnemonicWords.value)
-            } catch (e: Exception) {
-                null
-            }
+        val xPub = seed?.let {
+            generateXPub(
+                it,
+                getTimestampInMilliseconds(),
+                network
+            )
+        }
 
-            val xPub = seed?.let {
-                generateXPub(
-                    it,
-                    getTimestampInMilliseconds(),
-                    network
-                )
-            }
+        val now = getTimestampInMilliseconds()
 
-            val now = getTimestampInMilliseconds()
+        val sig = seed?.let {
+            rootSignMs(
+                it,
+                now,
+                network
+            )
+        }
 
-            val sig = seed?.let {
-                rootSignMs(
-                    it,
-                    now,
-                    network
-                )
-            }
+        if (xPub != null && sig != null) {
 
-            if (xPub != null && sig != null) {
+            mixerIp = serverUri
+            walletMnemonic = mnemonicWords
+            ownerSeed = seed
+            _ownerInfoStateFlow.value = ownerInfo
 
-                mixerIp = serverUri
-                walletMnemonic = mnemonicWords
-                ownerSeed = seed
-                _ownerInfoStateFlow.value = ownerInfo
-
-                connectToMQTT(
-                    serverUri,
-                    xPub,
-                    now,
-                    sig,
-                )
-            }
+            connectToMQTT(
+                serverUri,
+                xPub,
+                now,
+                sig,
+            )
         }
     }
 
@@ -420,40 +408,37 @@ class ConnectManagerImpl(
         amount: Long?,
         isTribe: Boolean
     ) {
-        coroutineScope.launch {
+        val now = getTimestampInMilliseconds()
 
-            val now = getTimestampInMilliseconds()
+        // Have to include al least 1 sat for tribe messages
+        val nnAmount = when {
+            isTribe && (amount == null || amount == 0L) -> 1L
+            isTribe -> amount ?: 1L
+            else -> amount ?: 0L
+        }
+        try {
+            val message = send(
+                ownerSeed!!,
+                now,
+                contactPubKey,
+                messageType.toUByte(),
+                sphinxMessage,
+                getCurrentUserState(),
+                ownerInfoStateFlow.value?.alias ?: "",
+                ownerInfoStateFlow.value?.picture ?: "",
+                convertSatsToMillisats(nnAmount),
+                isTribe
+            )
+            handleRunReturn(message, mqttClient!!)
 
-            // Have to include al least 1 sat for tribe messages
-            val nnAmount = when {
-                isTribe && (amount == null || amount == 0L) -> 1L
-                isTribe -> amount ?: 1L
-                else -> amount ?: 0L
-            }
-            try {
-                val message = send(
-                    ownerSeed!!,
-                    now,
-                    contactPubKey,
-                    messageType.toUByte(),
-                    sphinxMessage,
-                    getCurrentUserState(),
-                    ownerInfoStateFlow.value?.alias ?: "",
-                    ownerInfoStateFlow.value?.picture ?: "",
-                    convertSatsToMillisats(nnAmount),
-                    isTribe
-                )
-                handleRunReturn(message, mqttClient!!)
-
-                message.msgs.firstOrNull()?.uuid?.let { msgUUID ->
-                    notifyListeners {
-                        onMessageUUID(msgUUID, provisionalId)
-                    }
+            message.msgs.firstOrNull()?.uuid?.let { msgUUID ->
+                notifyListeners {
+                    onMessageUUID(msgUUID, provisionalId)
                 }
-
-            } catch (e: Exception) {
-                Log.e("MQTT_MESSAGES", "send ${e.message}")
             }
+
+        } catch (e: Exception) {
+            Log.e("MQTT_MESSAGES", "send ${e.message}")
         }
     }
 
@@ -462,30 +447,28 @@ class ConnectManagerImpl(
         contactPubKey: String,
         isTribe: Boolean
     ) {
-        coroutineScope.launch {
-            val now = getTimestampInMilliseconds()
+        val now = getTimestampInMilliseconds()
 
-            // Have to include al least 1 sat for tribe messages
-            val nnAmount = if (isTribe) 1L else 0L
+        // Have to include al least 1 sat for tribe messages
+        val nnAmount = if (isTribe) 1L else 0L
 
-            try {
-                val message = send(
-                    ownerSeed!!,
-                    now,
-                    contactPubKey,
-                    MessageType.DELETE.toUByte(),
-                    sphinxMessage,
-                    getCurrentUserState(),
-                    ownerInfoStateFlow.value?.alias ?: "",
-                    ownerInfoStateFlow.value?.picture ?: "",
-                    convertSatsToMillisats(nnAmount),
-                    isTribe
-                )
-                handleRunReturn(message, mqttClient!!)
+        try {
+            val message = send(
+                ownerSeed!!,
+                now,
+                contactPubKey,
+                MessageType.DELETE.toUByte(),
+                sphinxMessage,
+                getCurrentUserState(),
+                ownerInfoStateFlow.value?.alias ?: "",
+                ownerInfoStateFlow.value?.picture ?: "",
+                convertSatsToMillisats(nnAmount),
+                isTribe
+            )
+            handleRunReturn(message, mqttClient!!)
 
-            } catch (e: Exception) {
-                Log.e("MQTT_MESSAGES", "send ${e.message}")
-            }
+        } catch (e: Exception) {
+            Log.e("MQTT_MESSAGES", "send ${e.message}")
         }
     }
 
@@ -495,26 +478,23 @@ class ConnectManagerImpl(
         tribeRouteHint: String,
         isPrivate: Boolean
     ) {
-        coroutineScope.launch {
+        val now = getTimestampInMilliseconds()
 
-            val now = getTimestampInMilliseconds()
+        try {
+            val joinTribeMessage = joinTribe(
+                ownerSeed!!,
+                now,
+                getCurrentUserState(),
+                tribePubKey,
+                tribeRouteHint,
+                ownerInfoStateFlow.value?.alias ?: "",
+                1000.toULong(),
+                isPrivate
+            )
+            handleRunReturn(joinTribeMessage, mqttClient!!)
 
-            try {
-                val joinTribeMessage = joinTribe(
-                    ownerSeed!!,
-                    now,
-                    getCurrentUserState(),
-                    tribePubKey,
-                    tribeRouteHint,
-                    ownerInfoStateFlow.value?.alias ?: "",
-                    1000.toULong(),
-                    isPrivate
-                )
-                handleRunReturn(joinTribeMessage, mqttClient!!)
-
-            } catch (e: Exception) {
-                Log.e("MQTT_MESSAGES", "joinTribe ${e.message}")
-            }
+        } catch (e: Exception) {
+            Log.e("MQTT_MESSAGES", "joinTribe ${e.message}")
         }
     }
 
@@ -1193,9 +1173,8 @@ class ConnectManagerImpl(
 
     private fun reconnectWithBackoff() {
         resetMQTT()
-        coroutineScope.launch {
             val delayTime = calculateBackoffDelay()
-            delay(delayTime)
+//            delay(delayTime)
 
             if (!isConnected()) {
                 initializeMqttAndSubscribe(
@@ -1206,7 +1185,7 @@ class ConnectManagerImpl(
                 Log.d("MQTT_MESSAGES",  "onReconnectMqtt" )
             }
 
-            delay(1000)
+//            delay(1000)
 
             if (!isConnected()) {
                 reconnectWithBackoff()
@@ -1214,7 +1193,6 @@ class ConnectManagerImpl(
             } else {
                 reconnectAttempts = 0
             }
-        }
     }
 
     private fun convertSatsToMillisats(sats: Long): ULong {
