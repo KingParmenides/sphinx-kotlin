@@ -185,6 +185,10 @@ class ConnectManagerImpl: ConnectManager()
         mnemonicWords: WalletMnemonic,
         ownerInfo: OwnerInfo
     ) {
+        mixerIp = serverUri
+        walletMnemonic = mnemonicWords
+        _ownerInfoStateFlow.value = ownerInfo
+
         if (isConnected()) {
             return
         }
@@ -214,11 +218,7 @@ class ConnectManagerImpl: ConnectManager()
         }
 
         if (xPub != null && sig != null) {
-
-            mixerIp = serverUri
-            walletMnemonic = mnemonicWords
             ownerSeed = seed
-            _ownerInfoStateFlow.value = ownerInfo
 
             connectToMQTT(
                 serverUri,
