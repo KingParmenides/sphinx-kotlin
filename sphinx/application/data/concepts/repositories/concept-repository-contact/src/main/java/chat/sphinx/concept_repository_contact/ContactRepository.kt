@@ -65,6 +65,8 @@ interface ContactRepository {
 
     suspend fun createNewContact(contact: NewContact)
 
+    suspend fun insertRestoredContacts(contacts: List<NewContact>)
+
     suspend fun updateOwnerAlias(alias: ContactAlias)
 
     suspend fun getNewContactIndex(): Flow<ContactId?>

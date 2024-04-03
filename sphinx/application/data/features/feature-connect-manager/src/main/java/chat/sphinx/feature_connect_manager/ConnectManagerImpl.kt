@@ -833,47 +833,47 @@ class ConnectManagerImpl: ConnectManager()
             Log.d("MQTT_MESSAGES", "===> BALANCE ${newBalance.toLong()}")
         }
 
-        // Process each message in the new msgs array
-        rr.msgs.forEach { msg ->
-
-            // Handle restore contactas
-            if (restoreMnemonicWords != null && rr.msgs.any { it.type == 33.toUByte() }) {
-                val contactsToRestore = rr.msgs.filter { it.type == 33.toUByte() }.map { it.sender }
+        if (restoreMnemonicWords != null)  {
+            val contactsToRestore = rr.msgs.filter { it.type == 33.toUByte() }.map { it.sender }
+            if (contactsToRestore.isNotEmpty()) {
                 notifyListeners {
                     onRestoreContacts(contactsToRestore)
                 }
             }
-            else {
-                // Handling sent messages
-                msg.sentTo?.let { sentTo ->
-                    notifyListeners {
-                        onMessageSent(
-                            msg.message.orEmpty(),
-                            sentTo,
-                            msg.type?.toInt() ?: 0,
-                            msg.uuid.orEmpty(),
-                            msg.index.orEmpty(),
-                            msg.timestamp?.toLong()
-                        )
-                    }
-                    Log.d("MQTT_MESSAGES", "Sent message to $sentTo")
-                }
+        }
 
-                // Handling received messages
-                msg.sender?.let { sender ->
-                    notifyListeners {
-                        onMessageReceived(
-                            msg.message.orEmpty(),
-                            sender,
-                            msg.type?.toInt() ?: 0,
-                            msg.uuid.orEmpty(),
-                            msg.index.orEmpty(),
-                            msg.msat?.let { convertMillisatsToSats(it) },
-                            msg.timestamp?.toLong()
-                        )
-                    }
-                    Log.d("MQTT_MESSAGES", "Received message from $sender")
+        // Process each message in the new msgs array
+        rr.msgs.forEach { msg ->
+
+            // Handling sent messages
+            msg.sentTo?.let { sentTo ->
+                notifyListeners {
+                    onMessageSent(
+                        msg.message.orEmpty(),
+                        sentTo,
+                        msg.type?.toInt() ?: 0,
+                        msg.uuid.orEmpty(),
+                        msg.index.orEmpty(),
+                        msg.timestamp?.toLong()
+                    )
                 }
+                Log.d("MQTT_MESSAGES", "Sent message to $sentTo")
+            }
+
+            // Handling received messages
+            msg.sender?.let { sender ->
+                notifyListeners {
+                    onMessageReceived(
+                        msg.message.orEmpty(),
+                        sender,
+                        msg.type?.toInt() ?: 0,
+                        msg.uuid.orEmpty(),
+                        msg.index.orEmpty(),
+                        msg.msat?.let { convertMillisatsToSats(it) },
+                        msg.timestamp?.toLong()
+                    )
+                }
+                Log.d("MQTT_MESSAGES", "Received message from $sender")
             }
         }
 

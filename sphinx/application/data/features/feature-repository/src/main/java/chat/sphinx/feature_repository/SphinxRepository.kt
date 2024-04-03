@@ -564,6 +564,10 @@ abstract class SphinxRepository(
                         saveNewContactRegistered(msgSender)
                     }
 
+                    is MessageType.ContactKeyRecord -> {
+                        // Handled on onRestoreContacts
+                    }
+
                     else -> {
                         val message = msg.toMsg(moshi)
 
@@ -707,9 +711,7 @@ abstract class SphinxRepository(
                 )
             }
 
-            newContactList.forEach {
-                createNewContact(it)
-            }
+            insertRestoredContacts(newContactList)
         }
     }
 
@@ -924,8 +926,8 @@ abstract class SphinxRepository(
                 when (restoreProcessState) {
                     is RestoreProcessState.MessagesCounts -> {
                         connectManager.fetchFirstMessagesPerKey()
-                        delay(5000L)
-                        connectManager.fetchMessagesOnRestoreAccount()
+//                        delay(5000L)
+//                        connectManager.fetchMessagesOnRestoreAccount()
                     }
                 }
             }
@@ -2724,94 +2726,104 @@ abstract class SphinxRepository(
     }
 
     override suspend fun createNewContact(contact: NewContact) {
-        val queries = coreDB.getSphinxDatabaseQueries()
-        val now = DateTime.nowUTC()
-        val contactId = getNewContactIndex().firstOrNull()?.value
+        applicationScope.launch(io) {
+            val queries = coreDB.getSphinxDatabaseQueries()
+            val now = DateTime.nowUTC()
+            val contactId = getNewContactIndex().firstOrNull()?.value
 
-        val exitingContact = contact.lightningNodePubKey
-            ?.let { getContactByPubKey(it).firstOrNull() }
+            val exitingContact = contact.lightningNodePubKey
+                ?.let { getContactByPubKey(it).firstOrNull() }
 
-        if (exitingContact?.nodePubKey != null) {
-            val contactStatus = if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending
-            val chatStatus = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending
+            if (exitingContact?.nodePubKey != null) {
+                val contactStatus =
+                    if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending
+                val chatStatus = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending
 
-            contactLock.withLock {
-                queries.contactUpdateDetails(contact.contactAlias, contact.photoUrl, contactStatus, exitingContact.id)
-            }
-            chatLock.withLock {
-                queries.chatUpdateDetails(contact.photoUrl, chatStatus, ChatId(exitingContact.id.value))
-            }
+                contactLock.withLock {
+                    queries.contactUpdateDetails(
+                        contact.contactAlias,
+                        contact.photoUrl,
+                        contactStatus,
+                        exitingContact.id
+                    )
+                }
+                chatLock.withLock {
+                    queries.chatUpdateDetails(
+                        contact.photoUrl,
+                        chatStatus,
+                        ChatId(exitingContact.id.value)
+                    )
+                }
 
-        } else {
-
-            val invite = if (contact.invitePrice != null && contact.inviteCode != null) {
-                Invite(
-                    id = InviteId(contactId ?: -1L),
-                    inviteString = InviteString(contact.inviteString ?: "null"),
-                    inviteCode = InviteCode(contact.inviteCode ?: ""),
-                    paymentRequest = null,
-                    contactId = ContactId(contactId ?: -1L),
-                    status = InviteStatus.Pending,
-                    price = contact.invitePrice,
-                    createdAt = now.toDateTime()
-                )
             } else {
-                null
-            }
 
-            val newContact = Contact(
-                id = ContactId(exitingContact?.id?.value ?: contactId ?: -1L),
-                routeHint = contact.lightningRouteHint,
-                nodePubKey = contact.lightningNodePubKey,
-                nodeAlias = null,
-                alias = exitingContact?.alias ?: contact.contactAlias,
-                photoUrl = contact.photoUrl,
-                privatePhoto = PrivatePhoto.False,
-                isOwner = Owner.False,
-                status = if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending,
-                rsaPublicKey = null,
-                deviceId = null,
-                createdAt = now.toDateTime(),
-                updatedAt = now.toDateTime(),
-                fromGroup = ContactFromGroup.False,
-                notificationSound = null,
-                tipAmount = null,
-                inviteId = invite?.id,
-                inviteStatus = invite?.status,
-                blocked = Blocked.False
-            )
+                val invite = if (contact.invitePrice != null && contact.inviteCode != null) {
+                    Invite(
+                        id = InviteId(contactId ?: -1L),
+                        inviteString = InviteString(contact.inviteString ?: "null"),
+                        inviteCode = InviteCode(contact.inviteCode ?: ""),
+                        paymentRequest = null,
+                        contactId = ContactId(contactId ?: -1L),
+                        status = InviteStatus.Pending,
+                        price = contact.invitePrice,
+                        createdAt = now.toDateTime()
+                    )
+                } else {
+                    null
+                }
 
-            val newChat = Chat(
-                id = ChatId(exitingContact?.id?.value ?: contactId ?: -1L),
-                uuid = ChatUUID("${UUID.randomUUID()}"),
-                name = ChatName(
-                    exitingContact?.alias?.value ?: contact.contactAlias?.value ?: "unknown"
-                ),
-                photoUrl = contact.photoUrl,
-                type = ChatType.Conversation,
-                status = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending,
-                contactIds = listOf(ContactId(0), ContactId(contactId ?: -1)),
-                isMuted = ChatMuted.False,
-                createdAt = now.toDateTime(),
-                groupKey = null,
-                host = null,
-                pricePerMessage = null,
-                escrowAmount = null,
-                unlisted = ChatUnlisted.False,
-                privateTribe = ChatPrivate.False,
-                ownerPubKey = null,
-                seen = Seen.False,
-                metaData = null,
-                myPhotoUrl = null,
-                myAlias = null,
-                pendingContactIds = emptyList(),
-                latestMessageId = null,
-                contentSeenAt = null,
-                pinedMessage = null,
-                notify = NotificationLevel.SeeAll
-            )
+                val newContact = Contact(
+                    id = ContactId(exitingContact?.id?.value ?: contactId ?: -1L),
+                    routeHint = contact.lightningRouteHint,
+                    nodePubKey = contact.lightningNodePubKey,
+                    nodeAlias = null,
+                    alias = exitingContact?.alias ?: contact.contactAlias,
+                    photoUrl = contact.photoUrl,
+                    privatePhoto = PrivatePhoto.False,
+                    isOwner = Owner.False,
+                    status = if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending,
+                    rsaPublicKey = null,
+                    deviceId = null,
+                    createdAt = now.toDateTime(),
+                    updatedAt = now.toDateTime(),
+                    fromGroup = ContactFromGroup.False,
+                    notificationSound = null,
+                    tipAmount = null,
+                    inviteId = invite?.id,
+                    inviteStatus = invite?.status,
+                    blocked = Blocked.False
+                )
 
-            applicationScope.launch(mainImmediate) {
+                val newChat = Chat(
+                    id = ChatId(exitingContact?.id?.value ?: contactId ?: -1L),
+                    uuid = ChatUUID("${UUID.randomUUID()}"),
+                    name = ChatName(
+                        exitingContact?.alias?.value ?: contact.contactAlias?.value ?: "unknown"
+                    ),
+                    photoUrl = contact.photoUrl,
+                    type = ChatType.Conversation,
+                    status = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending,
+                    contactIds = listOf(ContactId(0), ContactId(contactId ?: -1)),
+                    isMuted = ChatMuted.False,
+                    createdAt = now.toDateTime(),
+                    groupKey = null,
+                    host = null,
+                    pricePerMessage = null,
+                    escrowAmount = null,
+                    unlisted = ChatUnlisted.False,
+                    privateTribe = ChatPrivate.False,
+                    ownerPubKey = null,
+                    seen = Seen.False,
+                    metaData = null,
+                    myPhotoUrl = null,
+                    myAlias = null,
+                    pendingContactIds = emptyList(),
+                    latestMessageId = null,
+                    contentSeenAt = null,
+                    pinedMessage = null,
+                    notify = NotificationLevel.SeeAll
+                )
+
 
                 contactLock.withLock {
                     queries.transaction {
@@ -2837,6 +2849,86 @@ abstract class SphinxRepository(
                         queries.transaction {
                             upsertNewInvite(invite, queries)
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    override suspend fun insertRestoredContacts(contacts: List<NewContact>) {
+        applicationScope.launch(io) {
+            val queries = coreDB.getSphinxDatabaseQueries()
+            val now = DateTime.nowUTC()
+
+            contacts.forEachIndexed { index, contact ->
+                val contactId = index.plus(1).toLong()
+
+                val newContact = Contact(
+                    id = ContactId(contactId ?: -1L),
+                    routeHint = contact.lightningRouteHint,
+                    nodePubKey = contact.lightningNodePubKey,
+                    nodeAlias = null,
+                    alias = contact.contactAlias,
+                    photoUrl = contact.photoUrl,
+                    privatePhoto = PrivatePhoto.False,
+                    isOwner = Owner.False,
+                    status = if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending,
+                    rsaPublicKey = null,
+                    deviceId = null,
+                    createdAt = now.toDateTime(),
+                    updatedAt = now.toDateTime(),
+                    fromGroup = ContactFromGroup.False,
+                    notificationSound = null,
+                    tipAmount = null,
+                    inviteId = null,
+                    inviteStatus = null,
+                    blocked = Blocked.False
+                )
+
+                val newChat = Chat(
+                    id = ChatId(contactId ?: -1L),
+                    uuid = ChatUUID("${UUID.randomUUID()}"),
+                    name = ChatName(contact.contactAlias?.value ?: "unknown"),
+                    photoUrl = contact.photoUrl,
+                    type = ChatType.Conversation,
+                    status = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending,
+                    contactIds = listOf(ContactId(0), ContactId(contactId ?: -1)),
+                    isMuted = ChatMuted.False,
+                    createdAt = now.toDateTime(),
+                    groupKey = null,
+                    host = null,
+                    pricePerMessage = null,
+                    escrowAmount = null,
+                    unlisted = ChatUnlisted.False,
+                    privateTribe = ChatPrivate.False,
+                    ownerPubKey = null,
+                    seen = Seen.False,
+                    metaData = null,
+                    myPhotoUrl = null,
+                    myAlias = null,
+                    pendingContactIds = emptyList(),
+                    latestMessageId = null,
+                    contentSeenAt = null,
+                    pinedMessage = null,
+                    notify = NotificationLevel.SeeAll
+                )
+
+                contactLock.withLock {
+                    queries.transaction {
+                        upsertNewContact(newContact, queries)
+                    }
+                }
+
+                chatLock.withLock {
+                    queries.transaction {
+                        upsertNewChat(
+                            newChat,
+                            moshi,
+                            SynchronizedMap<ChatId, Seen>(),
+                            queries,
+                            newContact,
+                            accountOwner.value?.nodePubKey
+                        )
                     }
                 }
             }
