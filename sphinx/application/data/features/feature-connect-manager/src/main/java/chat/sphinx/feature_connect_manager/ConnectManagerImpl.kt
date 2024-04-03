@@ -191,6 +191,10 @@ class ConnectManagerImpl: ConnectManager()
         mnemonicWords: WalletMnemonic,
         ownerInfo: OwnerInfo
     ) {
+        if (isConnected()) {
+            return
+        }
+
         val seed = try {
             mnemonicToSeed(mnemonicWords.value)
         } catch (e: Exception) {
