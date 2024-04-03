@@ -651,7 +651,6 @@ class ConnectManagerImpl: ConnectManager()
                 totalHighestIndex?.toULong() ?: 0.toULong(),
                 250.toUInt(),
                 true,
-                true
             )
             handleRunReturn(fetchMessages, mqttClient!!)
         } catch (e: Exception) {
@@ -667,8 +666,7 @@ class ConnectManagerImpl: ConnectManager()
                 getCurrentUserState(),
                 0.toULong(),
                 null,
-                false,
-                true
+                false
             )
             handleRunReturn(fetchFirstMsg, mqttClient!!)
         } catch (e: Exception) {
