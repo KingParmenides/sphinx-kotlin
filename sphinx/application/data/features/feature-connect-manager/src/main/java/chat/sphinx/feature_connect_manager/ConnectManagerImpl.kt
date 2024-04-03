@@ -286,7 +286,6 @@ class ConnectManagerImpl: ConnectManager()
 
                 override fun messageArrived(topic: String?, message: MqttMessage?) {
                     // Handle incoming messages here
-                    Log.d("MQTT_MESSAGES", "messageArrived: $message")
                     Log.d("MQTT_MESSAGES", "toppicArrived: $topic")
 
                     if (topic?.contains("/ping") == true) {

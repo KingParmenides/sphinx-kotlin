@@ -347,7 +347,7 @@ abstract class SphinxRepository(
     ) {
         connectManager.joinToTribe(tribeHost, tribePubKey, tribeRouteHint, isPrivate)
 
-        applicationScope.launch {
+        applicationScope.launch(io) {
             val queries = coreDB.getSphinxDatabaseQueries()
 
             // TribeId is set from LONG.MAX_VALUE and decremented by 1 for each new tribe
@@ -440,7 +440,7 @@ abstract class SphinxRepository(
 
     override suspend fun exitAndDeleteTribe(tribe: Chat) {
         val queries = coreDB.getSphinxDatabaseQueries()
-        applicationScope.launch(mainImmediate) {
+        applicationScope.launch(io) {
 
             val currentProvisionalId: MessageId? = withContext(io) {
                 queries.messageGetLowestProvisionalMessageId().executeAsOneOrNull()
@@ -685,7 +685,7 @@ abstract class SphinxRepository(
     }
 
     override fun onRestoreContacts(contacts: List<String?>) {
-        applicationScope.launch {
+        applicationScope.launch(io) {
             val contactList = contacts.mapNotNull { contact ->
                 try {
                     contact?.toMsgSender(moshi)
@@ -714,7 +714,7 @@ abstract class SphinxRepository(
     }
 
     override fun onNewTribe(newTribe: String) {
-        applicationScope.launch {
+        applicationScope.launch(io) {
             val queries = coreDB.getSphinxDatabaseQueries()
             val newCreateTribe = newTribe.toNewCreateTribe(moshi)
 
@@ -770,15 +770,18 @@ abstract class SphinxRepository(
     }
 
     override fun onTribeMembersList(tribeMembers: String) {
-        applicationScope.launch {
-            tribeMembers.toTribeMembersList(moshi)?.let { members ->
-                connectionManagerState.value = ConnectionManagerState.TribeMembersList(members)
+        applicationScope.launch(mainImmediate) {
+            try {
+                tribeMembers.toTribeMembersList(moshi)?.let { members ->
+                    connectionManagerState.value = ConnectionManagerState.TribeMembersList(members)
+                }
+            } catch (e: Exception) {
             }
         }
     }
 
     override fun onMessageUUID(msgUUID: String, provisionalId: Long) {
-        applicationScope.launch {
+        applicationScope.launch(io) {
             val queries = coreDB.getSphinxDatabaseQueries()
             messageLock.withLock {
                 queries.messageUpdateUUID(MessageUUID(msgUUID), MessageId(provisionalId))
@@ -799,7 +802,7 @@ abstract class SphinxRepository(
     }
 
     override fun onNewBalance(balance: Long) {
-        applicationScope.launch {
+        applicationScope.launch(io) {
 
             balanceLock.withLock {
                 accountBalanceStateFlow.value = balance.toNodeBalance()
@@ -822,7 +825,7 @@ abstract class SphinxRepository(
     }
 
     override fun listenToOwnerCreation(callback: () -> Unit) {
-        applicationScope.launch {
+        applicationScope.launch(mainImmediate) {
             accountOwner.filter { contact ->
                 contact != null && !contact.routeHint?.value.isNullOrEmpty()
             }
@@ -858,7 +861,7 @@ abstract class SphinxRepository(
     }
 
     override fun onLastReadMessages(lastReadMessages: String) {
-        applicationScope.launch {
+        applicationScope.launch(io) {
             val queries = coreDB.getSphinxDatabaseQueries()
 
             val lastReadMessagesMap = lastReadMessages.toLastReadMap(moshi)
@@ -914,15 +917,15 @@ abstract class SphinxRepository(
     }
 
     override fun startRestoreProcess() {
-        applicationScope.launch {
+        applicationScope.launch(mainImmediate) {
             connectManager.getAllMessagesCount()
 
             restoreProcessState.asStateFlow().collect{ restoreProcessState ->
                 when (restoreProcessState) {
                     is RestoreProcessState.MessagesCounts -> {
                         connectManager.fetchFirstMessagesPerKey()
-//                        delay(7000L)
-//                        connectManager.fetchMessagesOnRestoreAccount()
+                        delay(5000L)
+                        connectManager.fetchMessagesOnRestoreAccount()
                     }
                 }
             }
