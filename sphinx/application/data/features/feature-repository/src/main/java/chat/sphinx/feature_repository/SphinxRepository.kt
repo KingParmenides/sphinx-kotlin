@@ -822,10 +822,18 @@ abstract class SphinxRepository(
     }
 
     override fun onNetworkStatusChange(isConnected: Boolean) {
-        networkStatus.value = if (isConnected) {
-            NetworkStatus.Connected
+        if (isConnected) {
+            networkStatus.value = NetworkStatus.Connected
         } else {
-            NetworkStatus.Disconnected
+            networkStatus.value = NetworkStatus.Disconnected
+            reconnectMqtt()
+        }
+    }
+
+    private fun reconnectMqtt() {
+        applicationScope.launch(mainImmediate) {
+            delay(2000L)
+            connectManager.reconnectWithBackoff()
         }
     }
 

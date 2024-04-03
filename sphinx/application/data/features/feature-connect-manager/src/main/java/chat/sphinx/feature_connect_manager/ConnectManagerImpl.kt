@@ -69,6 +69,7 @@ class ConnectManagerImpl: ConnectManager()
     private var inviteCode: String? = null
     private var restoreMnemonicWords: List<String>? = emptyList()
     private var inviterContact: NewContact? = null
+    private var hasAttemptedReconnect = false
 
     private val _ownerInfoStateFlow: MutableStateFlow<OwnerInfo?> by lazy {
         MutableStateFlow(null)
@@ -252,6 +253,7 @@ class ConnectManagerImpl: ConnectManager()
             mqttClient?.connect(options, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     Log.d("MQTT_MESSAGES", "MQTT CONNECTED!")
+                    hasAttemptedReconnect = false
 
                     if (invite != null) {
                         handleRunReturn(invite, mqttClient!!)
@@ -266,7 +268,11 @@ class ConnectManagerImpl: ConnectManager()
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     Log.d("MQTT_MESSAGES", "Failed to connect to MQTT: ${exception?.message}")
-                    reconnectWithBackoff()
+
+                    if (!hasAttemptedReconnect) {
+                        hasAttemptedReconnect = true
+                        reconnectWithBackoff()
+                    }
                 }
             })
 
@@ -274,10 +280,6 @@ class ConnectManagerImpl: ConnectManager()
 
                 override fun connectionLost(cause: Throwable?) {
                     Log.d("MQTT_MESSAGES", "MQTT DISCONNECTED! $cause ${cause?.message}")
-
-                    notifyListeners {
-                        onNetworkStatusChange(false)
-                    }
 
                     reconnectWithBackoff()
                 }
@@ -308,9 +310,7 @@ class ConnectManagerImpl: ConnectManager()
             Log.d("MQTT_MESSAGES", "MQTT DISCONNECTED! exception")
             e.printStackTrace()
 
-            notifyListeners {
-                onNetworkStatusChange(false)
-            }
+            reconnectWithBackoff()
         }
     }
 
@@ -688,6 +688,25 @@ class ConnectManagerImpl: ConnectManager()
             Log.e("MQTT_MESSAGES", "getAllMessagesCount ${e.message}")
         }
     }
+
+    override fun reconnectWithBackoff() {
+        if (!isConnected()) {
+            resetMQTT()
+
+            notifyListeners {
+                onNetworkStatusChange(false)
+            }
+
+            initializeMqttAndSubscribe(
+                mixerIp!!,
+                walletMnemonic!!,
+                ownerInfoStateFlow.value!!,
+            )
+
+            Log.d("MQTT_MESSAGES", "onReconnectMqtt")
+        }
+    }
+
 
     override fun generateMediaToken(
         contactPubKey: String,
@@ -1165,34 +1184,6 @@ class ConnectManagerImpl: ConnectManager()
 
         return decodedMap
     }
-    private var reconnectAttempts = 0
-    private val initialReconnectDelay = 1000L
-    private val maxReconnectDelay = 10000L
-    private val backoffMultiplier = 2.0
-
-    private fun reconnectWithBackoff() {
-        resetMQTT()
-            val delayTime = calculateBackoffDelay()
-//            delay(delayTime)
-
-            if (!isConnected()) {
-                initializeMqttAndSubscribe(
-                    mixerIp!!,
-                    walletMnemonic!!,
-                    ownerInfoStateFlow.value!!,
-                )
-                Log.d("MQTT_MESSAGES",  "onReconnectMqtt" )
-            }
-
-//            delay(1000)
-
-            if (!isConnected()) {
-                reconnectWithBackoff()
-                Log.d("MQTT_MESSAGES",  "reconnectWithBackoff" )
-            } else {
-                reconnectAttempts = 0
-            }
-    }
 
     private fun convertSatsToMillisats(sats: Long): ULong {
         return (sats * 1_000).toULong()
@@ -1204,12 +1195,6 @@ class ConnectManagerImpl: ConnectManager()
         } catch (e: Exception) {
             return null
         }
-    }
-
-    private fun calculateBackoffDelay(): Long {
-        val delay = initialReconnectDelay * backoffMultiplier.pow(reconnectAttempts.toDouble()).toLong()
-        reconnectAttempts++
-        return min(delay, maxReconnectDelay) // Ensure the delay does not exceed the maximum
     }
 
     private fun isConnected(): Boolean {

@@ -88,6 +88,7 @@ abstract class ConnectManager {
     abstract fun fetchMessagesOnRestoreAccount(totalHighestIndex: Long?)
     abstract fun fetchFirstMessagesPerKey()
     abstract fun getAllMessagesCount()
+    abstract fun reconnectWithBackoff()
 }
 
 interface ConnectManagerListener {
