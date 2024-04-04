@@ -56,8 +56,6 @@ import uniffi.sphinxrs.signBytes
 import uniffi.sphinxrs.xpubFromSeed
 import java.security.SecureRandom
 import java.util.Calendar
-import kotlin.math.min
-import kotlin.math.pow
 
 class ConnectManagerImpl: ConnectManager()
 {
@@ -333,7 +331,10 @@ class ConnectManagerImpl: ConnectManager()
 
             Log.d("MQTT_MESSAGES", " this is handle ${runReturn}")
             Log.d("MQTT_MESSAGES", " MSG size ${runReturn.msgs.size}")
-            Log.d("MQTT_MESSAGES", " MSG LAST ${runReturn.msgs.lastOrNull()}")
+
+            runReturn.msgs.forEach {
+                Log.d("RESTORE_MESSAGES", " ${it}")
+            }
         }
     }
 
@@ -867,7 +868,8 @@ class ConnectManagerImpl: ConnectManager()
                         msg.type?.toInt() ?: 0,
                         msg.uuid.orEmpty(),
                         msg.index.orEmpty(),
-                        msg.timestamp?.toLong()
+                        msg.timestamp?.toLong(),
+                        msg.sender.orEmpty()
                     )
                 }
                 Log.d("MQTT_MESSAGES", "Sent message to $sentTo")

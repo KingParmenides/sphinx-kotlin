@@ -112,6 +112,7 @@ interface ConnectManagerListener {
         msgUUID: String,
         msgIndex: String,
         msgTimestamp: Long?,
+        msgSender: String
     )
 
     fun onRestoreContacts(contacts: List<String?>)

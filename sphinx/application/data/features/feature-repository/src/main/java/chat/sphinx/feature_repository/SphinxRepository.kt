@@ -633,7 +633,8 @@ abstract class SphinxRepository(
         msgType: Int,
         msgUUID: String,
         msgIndex: String,
-        msgTimestamp: Long?
+        msgTimestamp: Long?,
+        msgSender: String
     ) {
         applicationScope.launch(io) {
             try {
@@ -651,7 +652,7 @@ abstract class SphinxRepository(
                     null)
 
 
-                val msgSender = MsgSender(
+                val defaultSender = MsgSender(
                     contactPubKey,
                     null,
                     null,
@@ -662,6 +663,7 @@ abstract class SphinxRepository(
                 )
 
                 val message = if (msg.isNotEmpty()) msg.toMsg(moshi) else defaultMsg
+                val contactInfo = if (msgSender.isNotEmpty()) msgSender.toMsgSender(moshi) else defaultSender
                 val messageType = msgType.toMessageType()
                 val messageUUID = msgUUID.toMessageUUID() ?: return@launch
                 val messageId = MessageId(msgIndex.toLong())
@@ -671,7 +673,7 @@ abstract class SphinxRepository(
 
                 upsertMqttMessage(
                     message,
-                    msgSender,
+                    contactInfo,
                     messageType,
                     messageUUID,
                     messageId,
