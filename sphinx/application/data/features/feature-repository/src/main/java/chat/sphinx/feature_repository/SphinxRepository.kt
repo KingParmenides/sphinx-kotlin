@@ -659,6 +659,7 @@ abstract class SphinxRepository(
                     null,
                     true,
                     null,
+                    null,
                     null
                 )
 

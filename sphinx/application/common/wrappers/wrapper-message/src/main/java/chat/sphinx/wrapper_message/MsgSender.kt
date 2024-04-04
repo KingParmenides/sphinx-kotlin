@@ -13,7 +13,8 @@ data class MsgSender(
     val person: String?,
     val confirmed: Boolean,
     val code: String?,
-    val host: String?
+    val host: String?,
+    val role: Int?
 ) {
     companion object {
         fun String.toMsgSenderNull(moshi: Moshi): MsgSender? {
