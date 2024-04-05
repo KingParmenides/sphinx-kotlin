@@ -846,39 +846,20 @@ class ConnectManagerImpl: ConnectManager()
         // Process each message in the new msgs array
         rr.msgs.forEach { msg ->
 
-            // Handling sent messages
-            msg.sentTo?.let { sentTo ->
-                notifyListeners {
-                    onMessageSent(
-                        msg.message.orEmpty(),
-                        sentTo,
-                        msg.type?.toInt() ?: 0,
-                        msg.uuid.orEmpty(),
-                        msg.index.orEmpty(),
-                        msg.timestamp?.toLong(),
-                        msg.sender.orEmpty(),
-                        msg.fromMe
-                    )
-                }
-                Log.d("MQTT_MESSAGES", "Sent message to $sentTo")
+            notifyListeners {
+                onMessage(
+                    msg.message.orEmpty(),
+                    msg.sender.orEmpty(),
+                    msg.type?.toInt() ?: 0,
+                    msg.uuid.orEmpty(),
+                    msg.index.orEmpty(),
+                    msg.timestamp?.toLong(),
+                    msg.sentTo.orEmpty(),
+                    msg.msat?.let { convertMillisatsToSats(it) },
+                    msg.fromMe
+                )
             }
 
-            // Handling received messages
-            msg.sender?.let { sender ->
-                notifyListeners {
-                    onMessageReceived(
-                        msg.message.orEmpty(),
-                        sender,
-                        msg.type?.toInt() ?: 0,
-                        msg.uuid.orEmpty(),
-                        msg.index.orEmpty(),
-                        msg.msat?.let { convertMillisatsToSats(it) },
-                        msg.timestamp?.toLong(),
-                        msg.fromMe
-                    )
-                }
-                Log.d("MQTT_MESSAGES", "Received message from $sender")
-            }
         }
 
         // Handling new tribe and tribe members

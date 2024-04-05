@@ -95,25 +95,16 @@ interface ConnectManagerListener {
 
     fun onMnemonicWords(words: String)
     fun onOwnerRegistered(okKey: String, routeHint: String, isRestoreAccount: Boolean)
-    fun onMessageReceived(
+
+    fun onMessage(
         msg: String,
         msgSender: String,
         msgType: Int,
         msgUuid: String,
         msgIndex: String,
+        msgTimestamp: Long?,
+        sentTo: String,
         amount: Long?,
-        msgTimestamp: Long?,
-        fromMe: Boolean?
-    )
-
-    fun onMessageSent(
-        msg: String,
-        contactPubKey: String,
-        msgType: Int,
-        msgUUID: String,
-        msgIndex: String,
-        msgTimestamp: Long?,
-        msgSender: String,
         fromMe: Boolean?
     )
 

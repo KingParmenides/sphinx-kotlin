@@ -537,15 +537,16 @@ abstract class SphinxRepository(
         }
     }
 
-    override fun onMessageReceived(
+    override fun onMessage(
         msg: String,
         msgSender: String,
         msgType: Int,
         msgUuid: String,
         msgIndex: String,
-        amount: Long?,
         msgTimestamp: Long?,
-        fromMe: Boolean?,
+        sentTo: String,
+        amount: Long?,
+        fromMe: Boolean?
     ) {
         applicationScope.launch(io) {
             try {
@@ -567,16 +568,40 @@ abstract class SphinxRepository(
                         // Handled on onRestoreContacts
                     }
                     else -> {
-                        val message = msg.toMsg(moshi)
+                        val defaultMsg = Msg(
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null
+                        )
 
-                        val contactInfo = msgSender.toMsgSender(moshi)
+                        val defaultSender = MsgSender(
+                            sentTo,
+                            null,
+                            null,
+                            null,
+                            true,
+                            null,
+                            null,
+                            null
+                        )
+
+                        val message = if (msg.isNotEmpty()) msg.toMsg(moshi) else defaultMsg
+                        val contactInfo =
+                            if (msgSender.isNotEmpty()) msgSender.toMsgSender(moshi) else defaultSender
                         val messageId = MessageId(msgIndex.toLong())
-                        val messageUUID = msgUuid.toMessageUUID() ?: return@launch
+                        val messageUuid = msgUuid.toMessageUUID() ?: return@launch
                         val originalUUID = message.originalUuid?.toMessageUUID()
                         val date = msgTimestamp?.let { DateTime(Date(it)) }
-                        val isSent = (accountOwner.value?.alias?.value == contactInfo.alias)
-                        val msgAmount = message.amount?.milliSatsToSats()
-
+                        val isSent = fromMe
+                        val realAmount = if (fromMe == true) message.amount?.milliSatsToSats() else amount?.toSat()
                         val paymentRequest = message.invoice?.toLightningPaymentRequestOrNull()
                         val bolt11 = paymentRequest?.let { Bolt11.decode(it) }
                         val paymentHash = paymentRequest?.let {
@@ -597,89 +622,25 @@ abstract class SphinxRepository(
                             message,
                             contactInfo,
                             messageType,
-                            messageUUID,
+                            messageUuid,
                             messageId,
                             originalUUID,
                             date,
-                            isSent,
-                            amount?.toSat() ?: msgAmount,
+                            fromMe ?: false,
+                            realAmount,
                             paymentRequest,
                             paymentHash,
                             bolt11
                         )
                     }
                 }
-            } catch(e: Exception) {
-                LOG.e(TAG, "onMessageReceived: ${e.message}", e)
+                } catch (e: Exception) {
+                    LOG.e(TAG, "onMessageSent: ${e.message}", e)
+                }
+
             }
+
         }
-    }
-
-    override fun onMessageSent(
-        msg: String,
-        contactPubKey: String,
-        msgType: Int,
-        msgUUID: String,
-        msgIndex: String,
-        msgTimestamp: Long?,
-        msgSender: String,
-        fromMe: Boolean?,
-        ) {
-        applicationScope.launch(io) {
-            try {
-                val defaultMsg = Msg(
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null)
-
-
-                val defaultSender = MsgSender(
-                    contactPubKey,
-                    null,
-                    null,
-                    null,
-                    true,
-                    null,
-                    null,
-                    null
-                )
-
-                val message = if (msg.isNotEmpty()) msg.toMsg(moshi) else defaultMsg
-                val contactInfo = if (msgSender.isNotEmpty()) msgSender.toMsgSender(moshi) else defaultSender
-                val messageType = msgType.toMessageType()
-                val messageUUID = msgUUID.toMessageUUID() ?: return@launch
-                val messageId = MessageId(msgIndex.toLong())
-                val originalUUID = message.originalUuid?.toMessageUUID()
-                val date = msgTimestamp?.let { DateTime(Date(it)) }
-                val amount = message.amount?.milliSatsToSats()
-
-                upsertMqttMessage(
-                    message,
-                    contactInfo,
-                    messageType,
-                    messageUUID,
-                    messageId,
-                    originalUUID,
-                    date,
-                    true,
-                    amount,
-                    null,
-                    null,
-                    null
-                )
-            } catch (e: Exception) {
-                LOG.e(TAG, "onMessageSent: ${e.message}", e)
-            }
-        }
-    }
 
     override fun onRestoreContacts(contacts: List<String?>) {
         applicationScope.launch(io) {
