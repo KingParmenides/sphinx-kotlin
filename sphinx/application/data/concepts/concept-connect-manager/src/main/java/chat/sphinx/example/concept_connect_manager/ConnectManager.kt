@@ -102,7 +102,8 @@ interface ConnectManagerListener {
         msgUuid: String,
         msgIndex: String,
         amount: Long?,
-        msgTimestamp: Long?
+        msgTimestamp: Long?,
+        fromMe: Boolean?
     )
 
     fun onMessageSent(
@@ -112,12 +113,14 @@ interface ConnectManagerListener {
         msgUUID: String,
         msgIndex: String,
         msgTimestamp: Long?,
-        msgSender: String
+        msgSender: String,
+        fromMe: Boolean?
     )
 
     fun onRestoreContacts(contacts: List<String?>)
+    fun onRestoreTribes(tribes: List<Pair<String?, Boolean?>>) // Sender, FromMe
 
-    fun onNewTribe(newTribe: String)
+    fun onNewTribeCreated(newTribe: String)
     fun onTribeMembersList(tribeMembers: String)
     fun onMessageUUID(msgUUID: String, provisionalId: Long)
     fun onUpdateUserState(userState: String)

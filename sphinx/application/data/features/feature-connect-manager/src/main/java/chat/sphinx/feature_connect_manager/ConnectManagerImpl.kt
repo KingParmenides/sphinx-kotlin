@@ -624,24 +624,6 @@ class ConnectManagerImpl: ConnectManager()
         }
     }
 
-//    override fun fetchContactsOnRestoreAccount() {
-//        try {
-//            val fetchContacts = uniffi.sphinxrs.fetchMsgsBatchOkkey(
-//                ownerSeed!!,
-//                getTimestampInMilliseconds(),
-//                getCurrentUserState(),
-//                0.toULong(),
-//                50.toUInt(),
-//                false,
-//                true
-//            )
-//            handleRunReturn(fetchContacts, mqttClient!!)
-//        }
-//        catch (e: Exception) {
-//            Log.e("MQTT_MESSAGES", "fetchContactsOnRestoreAccount ${e.message}")
-//        }
-//    }
-
     override fun fetchMessagesOnRestoreAccount(totalHighestIndex: Long?) {
         try {
             Log.e("MQTT_MESSAGES", "se ejecutó fetchMessagesOnRestoreAccount")
@@ -847,11 +829,16 @@ class ConnectManagerImpl: ConnectManager()
             Log.d("MQTT_MESSAGES", "===> BALANCE ${newBalance.toLong()}")
         }
 
-        if (restoreMnemonicWords != null)  {
+        if (restoreMnemonicWords?.isNotEmpty() == true)  {
             val contactsToRestore = rr.msgs.filter { it.type == 33.toUByte() }.map { it.sender }
+            val tribesToRestore = rr.msgs.filter { it.type == 20.toUByte() || it.type == 14.toUByte() }.map {
+                Pair(it.sender, it.fromMe)
+            }
+
             if (contactsToRestore.isNotEmpty()) {
                 notifyListeners {
                     onRestoreContacts(contactsToRestore)
+                    onRestoreTribes(tribesToRestore)
                 }
             }
         }
@@ -869,7 +856,8 @@ class ConnectManagerImpl: ConnectManager()
                         msg.uuid.orEmpty(),
                         msg.index.orEmpty(),
                         msg.timestamp?.toLong(),
-                        msg.sender.orEmpty()
+                        msg.sender.orEmpty(),
+                        msg.fromMe
                     )
                 }
                 Log.d("MQTT_MESSAGES", "Sent message to $sentTo")
@@ -885,7 +873,8 @@ class ConnectManagerImpl: ConnectManager()
                         msg.uuid.orEmpty(),
                         msg.index.orEmpty(),
                         msg.msat?.let { convertMillisatsToSats(it) },
-                        msg.timestamp?.toLong()
+                        msg.timestamp?.toLong(),
+                        msg.fromMe
                     )
                 }
                 Log.d("MQTT_MESSAGES", "Received message from $sender")
@@ -895,7 +884,7 @@ class ConnectManagerImpl: ConnectManager()
         // Handling new tribe and tribe members
         rr.newTribe?.let { newTribe ->
             notifyListeners {
-                onNewTribe(newTribe)
+                onNewTribeCreated(newTribe)
             }
             Log.d("MQTT_MESSAGES", "===> newTribe $newTribe")
         }
