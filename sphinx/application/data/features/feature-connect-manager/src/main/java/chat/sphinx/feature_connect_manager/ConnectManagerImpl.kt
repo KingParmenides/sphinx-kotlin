@@ -837,9 +837,11 @@ class ConnectManagerImpl: ConnectManager()
                 Pair(it.sender, it.fromMe)
             }
 
-            val accountOwner = rr.msgs.firstOrNull { msg ->
-                msg.fromMe == true && msg.sender != null
-            }
+            val accountOwner = rr.msgs.filter { msg ->
+                msg.fromMe == true && !msg.sender.isNullOrEmpty()
+                        && msg.type?.toInt() != 14
+                        && msg.type?.toInt() != 20
+            }.maxByOrNull { msg -> msg.index?.toIntOrNull() ?: Int.MIN_VALUE }
 
             if (contactsToRestore.isNotEmpty() || tribesToRestore.isNotEmpty()) {
                 notifyListeners {
