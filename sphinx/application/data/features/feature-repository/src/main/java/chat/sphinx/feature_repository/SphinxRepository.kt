@@ -600,7 +600,6 @@ abstract class SphinxRepository(
                         val messageUuid = msgUuid.toMessageUUID() ?: return@launch
                         val originalUUID = message.originalUuid?.toMessageUUID()
                         val date = msgTimestamp?.let { DateTime(Date(it)) }
-                        val isSent = fromMe
                         val realAmount = if (fromMe == true) message.amount?.milliSatsToSats() else amount?.toSat()
                         val paymentRequest = message.invoice?.toLightningPaymentRequestOrNull()
                         val bolt11 = paymentRequest?.let { Bolt11.decode(it) }
@@ -691,6 +690,7 @@ abstract class SphinxRepository(
                     joinTribeOnRestoreAccount(it, isAdmin)
                 }
             }
+            restoreProcessState.value = RestoreProcessState.RestoreMessages
         }
     }
 

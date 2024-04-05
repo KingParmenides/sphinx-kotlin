@@ -835,7 +835,7 @@ class ConnectManagerImpl: ConnectManager()
                 Pair(it.sender, it.fromMe)
             }
 
-            if (contactsToRestore.isNotEmpty()) {
+            if (contactsToRestore.isNotEmpty() || tribesToRestore.isNotEmpty()) {
                 notifyListeners {
                     onRestoreContacts(contactsToRestore)
                     onRestoreTribes(tribesToRestore)
