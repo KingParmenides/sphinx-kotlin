@@ -636,9 +636,7 @@ abstract class SphinxRepository(
                 } catch (e: Exception) {
                     LOG.e(TAG, "onMessageSent: ${e.message}", e)
                 }
-
             }
-
         }
 
     override fun onRestoreContacts(contacts: List<String?>) {
@@ -691,6 +689,22 @@ abstract class SphinxRepository(
                 }
             }
             restoreProcessState.value = RestoreProcessState.RestoreMessages
+        }
+    }
+
+    override fun onRestoreOwnerAliasAndPicture(msgSender: String) {
+        applicationScope.launch(io) {
+            val queries = coreDB.getSphinxDatabaseQueries()
+            val owner = queries.contactGetOwner().executeAsOneOrNull()
+
+            if (owner?.alias?.value.isNullOrEmpty()) {
+                val contactInfo = msgSender.toMsgSender(moshi)
+
+                queries.contactUpdateOwnerInfo(
+                    contactInfo.alias?.toContactAlias(),
+                    contactInfo.photo_url?.toPhotoUrl(),
+                )
+            }
         }
     }
 

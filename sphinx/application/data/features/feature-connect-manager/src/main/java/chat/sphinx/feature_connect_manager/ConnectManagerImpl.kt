@@ -831,14 +831,26 @@ class ConnectManagerImpl: ConnectManager()
 
         if (restoreMnemonicWords?.isNotEmpty() == true)  {
             val contactsToRestore = rr.msgs.filter { it.type == 33.toUByte() }.map { it.sender }
-            val tribesToRestore = rr.msgs.filter { it.type == 20.toUByte() || it.type == 14.toUByte() }.map {
+            val tribesToRestore = rr.msgs.filter {
+                it.type == 20.toUByte() || it.type == 14.toUByte()
+            }.map {
                 Pair(it.sender, it.fromMe)
+            }
+
+            val accountOwner = rr.msgs.firstOrNull { msg ->
+                msg.fromMe == true && msg.sender != null
             }
 
             if (contactsToRestore.isNotEmpty() || tribesToRestore.isNotEmpty()) {
                 notifyListeners {
                     onRestoreContacts(contactsToRestore)
                     onRestoreTribes(tribesToRestore)
+                }
+            }
+
+            if (accountOwner?.sender != null) {
+                notifyListeners {
+                    onRestoreOwnerAliasAndPicture(accountOwner.sender!!)
                 }
             }
         }

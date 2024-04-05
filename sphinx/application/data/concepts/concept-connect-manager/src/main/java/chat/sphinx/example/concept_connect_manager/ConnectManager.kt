@@ -110,6 +110,7 @@ interface ConnectManagerListener {
 
     fun onRestoreContacts(contacts: List<String?>)
     fun onRestoreTribes(tribes: List<Pair<String?, Boolean?>>) // Sender, FromMe
+    fun onRestoreOwnerAliasAndPicture(msgSender: String)
 
     fun onNewTribeCreated(newTribe: String)
     fun onTribeMembersList(tribeMembers: String)
