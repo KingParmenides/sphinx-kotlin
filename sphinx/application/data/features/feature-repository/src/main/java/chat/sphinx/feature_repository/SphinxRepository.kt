@@ -708,6 +708,18 @@ abstract class SphinxRepository(
         }
     }
 
+    override fun onRestoreNextPageMessages(highestIndex: Long, limit: Int) {
+        applicationScope.launch(io) {
+            val nextHighestIndex = highestIndex.minus(limit)
+            if (nextHighestIndex > 0) {
+                delay(200L)
+                connectManager.fetchMessagesOnRestoreAccount(nextHighestIndex)
+            } else {
+                // Restore complete
+            }
+        }
+    }
+
     override fun onNewTribeCreated(newTribe: String) {
         applicationScope.launch(io) {
             val queries = coreDB.getSphinxDatabaseQueries()

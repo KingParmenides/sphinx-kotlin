@@ -112,6 +112,8 @@ interface ConnectManagerListener {
     fun onRestoreTribes(tribes: List<Pair<String?, Boolean?>>) // Sender, FromMe
     fun onRestoreOwnerAliasAndPicture(msgSender: String)
 
+    fun onRestoreNextPageMessages(highestIndex: Long, limit: Int)
+
     fun onNewTribeCreated(newTribe: String)
     fun onTribeMembersList(tribeMembers: String)
     fun onMessageUUID(msgUUID: String, provisionalId: Long)
@@ -124,7 +126,6 @@ interface ConnectManagerListener {
     fun onNewInviteCreated(inviteString: String)
     fun onLastReadMessages(lastReadMessages: String)
     fun onMessagesCounts(msgsCounts: String)
-
 
 }
 

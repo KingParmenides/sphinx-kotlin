@@ -626,16 +626,20 @@ class ConnectManagerImpl: ConnectManager()
 
     override fun fetchMessagesOnRestoreAccount(totalHighestIndex: Long?) {
         try {
-            Log.e("MQTT_MESSAGES", "se ejecutó fetchMessagesOnRestoreAccount")
+            val limit = 250
             val fetchMessages = uniffi.sphinxrs.fetchMsgsBatch(
                 ownerSeed!!,
                 getTimestampInMilliseconds(),
                 getCurrentUserState(),
                 totalHighestIndex?.toULong() ?: 0.toULong(),
-                250.toUInt(),
+                limit.toUInt(),
                 true,
             )
             handleRunReturn(fetchMessages, mqttClient!!)
+
+            notifyListeners {
+                onRestoreNextPageMessages(totalHighestIndex ?: 0, limit)
+            }
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "fetchMessagesOnRestoreAccount ${e.message}")
         }
@@ -873,7 +877,6 @@ class ConnectManagerImpl: ConnectManager()
                     msg.fromMe
                 )
             }
-
         }
 
         // Handling new tribe and tribe members
