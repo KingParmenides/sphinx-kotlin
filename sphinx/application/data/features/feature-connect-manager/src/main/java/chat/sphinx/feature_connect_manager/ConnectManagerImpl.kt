@@ -30,6 +30,7 @@ import org.json.JSONObject
 import uniffi.sphinxrs.RunReturn
 import uniffi.sphinxrs.addContact
 import uniffi.sphinxrs.codeFromInvite
+import uniffi.sphinxrs.fetchMsgs
 import uniffi.sphinxrs.getMsgsCounts
 import uniffi.sphinxrs.getReads
 import uniffi.sphinxrs.getSubscriptionTopic
@@ -314,26 +315,29 @@ class ConnectManagerImpl: ConnectManager()
 
     private fun handleMessageArrived(topic: String?, message: MqttMessage?) {
         if (topic != null && message?.payload != null) {
+            try {
+                val runReturn = handle(
+                    topic,
+                    message.payload,
+                    ownerSeed ?: "",
+                    getTimestampInMilliseconds(),
+                    getCurrentUserState(),
+                    ownerInfoStateFlow.value?.alias ?: "",
+                    ownerInfoStateFlow.value?.picture ?: ""
+                )
 
-            val runReturn = handle(
-                topic,
-                message.payload,
-                ownerSeed ?: "",
-                getTimestampInMilliseconds(),
-                getCurrentUserState(),
-                ownerInfoStateFlow.value?.alias ?: "",
-                ownerInfoStateFlow.value?.picture ?: ""
-            )
+                mqttClient?.let { client ->
+                    handleRunReturn(runReturn, client)
+                }
 
-            mqttClient?.let { client ->
-                handleRunReturn(runReturn, client)
-            }
+                Log.d("MQTT_MESSAGES", " this is handle ${runReturn}")
 
-            Log.d("MQTT_MESSAGES", " this is handle ${runReturn}")
-            Log.d("MQTT_MESSAGES", " MSG size ${runReturn.msgs.size}")
+                runReturn.msgs.forEach {
+                    Log.d("RESTORE_MESSAGES", " ${it}")
+                }
 
-            runReturn.msgs.forEach {
-                Log.d("RESTORE_MESSAGES", " ${it}")
+            } catch (e: Exception) {
+                Log.e("MQTT_MESSAGES", "handleMessageArrived ${e.message}")
             }
         }
     }
@@ -375,19 +379,19 @@ class ConnectManagerImpl: ConnectManager()
                 )
                 handleRunReturn(setUp, client)
 
-                if (restoreMnemonicWords?.isEmpty() == true) {
+                if (ownerInfoStateFlow.value != null) {
 
-//                    val fetchMessages = fetchMsgs(
-//                        ownerSeed!!,
-//                        getTimestampInMilliseconds(),
-//                        getCurrentUserState(),
-//                        ownerInfoStateFlow.value?.messageLastIndex?.plus(1)?.toULong()
-//                            ?: 0.toULong(),
-//                        100.toUInt()
-//                    )
-//                    handleRunReturn(fetchMessages, mqttClient!!)
-//
-//                    getReadMessages()
+                    val fetchMessages = fetchMsgs(
+                        ownerSeed!!,
+                        getTimestampInMilliseconds(),
+                        getCurrentUserState(),
+                        ownerInfoStateFlow.value?.messageLastIndex?.plus(1)?.toULong() ?: 0.toULong(),
+                        100.toUInt()
+                    )
+                    handleRunReturn(fetchMessages, mqttClient!!)
+
+                    getReadMessages()
+                    Log.d("SELLAMO", "fetchMessages")
                 }
 
                 if (inviterContact != null) {
