@@ -153,7 +153,7 @@ sealed class DashboardChat {
                     }
                 }
                 message.type.isGroupKick() -> {
-                    if (isMyTribe(owner)) {
+                    if (message.sender.value == 0L) {
                             context.getString(
                             R.string.last_message_description_just_left_tribe,
                             message.senderAlias?.value
