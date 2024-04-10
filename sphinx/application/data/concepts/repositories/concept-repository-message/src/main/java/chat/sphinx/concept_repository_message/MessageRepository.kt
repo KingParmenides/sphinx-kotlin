@@ -132,6 +132,7 @@ interface MessageRepository {
         msgUuid: MessageUUID,
         msgIndex: MessageId,
         originalUuid: MessageUUID?,
+        timestamp: DateTime?,
         date: DateTime?,
         isSent: Boolean,
         amount: Sat?,

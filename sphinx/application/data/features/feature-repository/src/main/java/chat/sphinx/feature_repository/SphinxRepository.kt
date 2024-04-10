@@ -599,7 +599,8 @@ abstract class SphinxRepository(
                         val messageId = MessageId(msgIndex.toLong())
                         val messageUuid = msgUuid.toMessageUUID() ?: return@launch
                         val originalUUID = message.originalUuid?.toMessageUUID()
-                        val date = msgTimestamp?.let { DateTime(Date(it)) }
+                        val timestamp = msgTimestamp?.toDateTime()
+                        val date = message.date?.toDateTime()
                         val realAmount = if (fromMe == true) message.amount?.milliSatsToSats() else amount?.toSat()
                         val paymentRequest = message.invoice?.toLightningPaymentRequestOrNull()
                         val bolt11 = paymentRequest?.let { Bolt11.decode(it) }
@@ -624,6 +625,7 @@ abstract class SphinxRepository(
                             messageUuid,
                             messageId,
                             originalUUID,
+                            timestamp,
                             date,
                             fromMe ?: false,
                             realAmount,
@@ -958,6 +960,7 @@ abstract class SphinxRepository(
         msgUuid: MessageUUID,
         msgIndex: MessageId,
         originalUuid: MessageUUID?,
+        timestamp: DateTime?,
         date: DateTime?,
         isSent: Boolean,
         amount: Sat?,
@@ -969,6 +972,7 @@ abstract class SphinxRepository(
         val contact = getContactByPubKey(LightningNodePubKey(msgSender.pubkey)).firstOrNull()
         val chatTribe = getChatByUUID(ChatUUID(msgSender.pubkey)).firstOrNull()
         var messageMedia: MessageMediaDbo? = null
+        val isTribe = contact == null
 
         if (contact != null || chatTribe != null) {
 
@@ -1030,6 +1034,8 @@ abstract class SphinxRepository(
                 else -> MessageStatus.Received
             }
 
+            val now = DateTime.nowUTC().toDateTime()
+
             val newMessage = NewMessage(
                 id = msgIndex,
                 uuid = msgUuid,
@@ -1040,7 +1046,7 @@ abstract class SphinxRepository(
                 amount = bolt11?.getSatsAmount() ?: existingMessage?.amount ?: amount ?: Sat(0L),
                 paymentRequest = existingMessage?.payment_request ?: paymentRequest,
                 paymentHash = existingMessage?.payment_hash ?: msg.paymentHash?.toLightningPaymentHash() ?: paymentHash,
-                date = date ?: DateTime.nowUTC().toDateTime(),
+                date = if (isTribe) date ?: now else timestamp ?: now,
                 expirationDate = bolt11?.getExpiryTime()?.toDateTime(),
                 messageContent = null,
                 status = status,
@@ -2755,8 +2761,7 @@ abstract class SphinxRepository(
                 ?.let { getContactByPubKey(it).firstOrNull() }
 
             if (exitingContact?.nodePubKey != null) {
-                val contactStatus =
-                    if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending
+                val contactStatus = if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending
                 val chatStatus = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending
 
                 contactLock.withLock {
