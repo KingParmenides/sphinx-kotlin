@@ -166,7 +166,8 @@ class ConnectManagerImpl: ConnectManager()
                 ownerInfoStateFlow.value?.alias ?: "",
                 ownerInfoStateFlow.value?.picture ?: "",
                 3000.toULong(),
-                contact.inviteCode
+                contact.inviteCode,
+                contact.contactAlias?.value
             )
 
             handleRunReturn(
