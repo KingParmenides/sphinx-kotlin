@@ -300,7 +300,7 @@ internal class TribeMembersListViewModel @Inject constructor(
         }
     }
 
-    fun kickMemberFromTribe(memberPubKey: LightningNodePubKey) {
+    fun kickMemberFromTribe(memberPubKey: LightningNodePubKey, alias: SenderAlias?) {
         viewModelScope.launch(mainImmediate) {
 //            chatRepository.kickMemberFromTribe(ChatId(args.argChatId), contactPubKey)
             messageRepository.processMemberRequest(
@@ -308,7 +308,7 @@ internal class TribeMembersListViewModel @Inject constructor(
                 null,
                 memberPubKey,
                 MessageType.GroupAction.Kick,
-                null
+                alias
             )
         }
     }

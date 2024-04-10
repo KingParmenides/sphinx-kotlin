@@ -22,6 +22,7 @@ import chat.sphinx.wrapper_common.lightning.toLightningNodePubKey
 import chat.sphinx.wrapper_common.util.getInitials
 import chat.sphinx.wrapper_message.MessageType
 import chat.sphinx.wrapper_message.SenderAlias
+import chat.sphinx.wrapper_message.toSenderAlias
 import io.matthewnelson.android_feature_screens.util.gone
 import io.matthewnelson.android_feature_screens.util.goneIfFalse
 import io.matthewnelson.android_feature_screens.util.visible
@@ -305,7 +306,7 @@ internal class TribeMembersListAdapter(
         val tribeMember = tribeMembers.elementAtOrNull(position)
 
         tribeMember?.pubkey?.toLightningNodePubKey()?.let {
-            viewModel.kickMemberFromTribe(it)
+            viewModel.kickMemberFromTribe(it, tribeMember.alias?.toSenderAlias())
             notifyItemRemoved(position)
         }
     }

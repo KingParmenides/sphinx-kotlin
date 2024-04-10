@@ -1025,8 +1025,10 @@ abstract class SphinxRepository(
                 queries.messageDeleteByUUID(msgUuid)
             }
 
-            val senderAlias = if (msgType == MessageType.GroupAction.MemberApprove ||
-                msgType == MessageType.GroupAction.MemberReject) {
+            val senderAlias = if ( msgType == MessageType.GroupAction.MemberApprove ||
+                msgType == MessageType.GroupAction.MemberReject  ||
+                msgType == MessageType.GroupAction.Kick
+            ) {
                 existingMessage?.sender_alias
             } else msgSender.alias?.toSenderAlias()
 
