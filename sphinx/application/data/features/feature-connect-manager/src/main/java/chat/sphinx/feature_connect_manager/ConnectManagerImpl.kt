@@ -380,7 +380,7 @@ class ConnectManagerImpl: ConnectManager()
                 )
                 handleRunReturn(setUp, client)
 
-                if (ownerInfoStateFlow.value != null) {
+                if (ownerInfoStateFlow.value != null && restoreMnemonicWords?.isEmpty() == true) {
 
                     val fetchMessages = fetchMsgs(
                         ownerSeed!!,

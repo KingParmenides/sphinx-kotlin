@@ -596,7 +596,7 @@ abstract class SphinxRepository(
                         val message = if (msg.isNotEmpty()) msg.toMsg(moshi) else defaultMsg
                         val contactInfo =
                             if (msgSender.isNotEmpty()) msgSender.toMsgSender(moshi) else defaultSender
-                        val messageId = MessageId(msgIndex.toLong())
+                        val messageId = if (msgIndex.isNotEmpty()) MessageId(msgIndex.toLong()) else return@launch
                         val messageUuid = msgUuid.toMessageUUID() ?: return@launch
                         val originalUUID = message.originalUuid?.toMessageUUID()
                         val timestamp = msgTimestamp?.toDateTime()
@@ -664,7 +664,10 @@ abstract class SphinxRepository(
                 )
             }
 
-            insertRestoredContacts(newContactList)
+            newContactList.forEach { newContact ->
+                delay(100L)
+                createNewContact(newContact)
+            }
 
             restoreProcessState.value = RestoreProcessState.RestoreMessages
         }
@@ -2879,87 +2882,6 @@ abstract class SphinxRepository(
             }
         }
     }
-
-    override suspend fun insertRestoredContacts(contacts: List<NewContact>) {
-        applicationScope.launch(io) {
-            val queries = coreDB.getSphinxDatabaseQueries()
-            val now = DateTime.nowUTC()
-
-            contacts.forEachIndexed { index, contact ->
-                val contactId = index.plus(1).toLong()
-
-                val newContact = Contact(
-                    id = ContactId(contactId ?: -1L),
-                    routeHint = contact.lightningRouteHint,
-                    nodePubKey = contact.lightningNodePubKey,
-                    nodeAlias = null,
-                    alias = contact.contactAlias,
-                    photoUrl = contact.photoUrl,
-                    privatePhoto = PrivatePhoto.False,
-                    isOwner = Owner.False,
-                    status = if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending,
-                    rsaPublicKey = null,
-                    deviceId = null,
-                    createdAt = now.toDateTime(),
-                    updatedAt = now.toDateTime(),
-                    fromGroup = ContactFromGroup.False,
-                    notificationSound = null,
-                    tipAmount = null,
-                    inviteId = null,
-                    inviteStatus = null,
-                    blocked = Blocked.False
-                )
-
-                val newChat = Chat(
-                    id = ChatId(contactId ?: -1L),
-                    uuid = ChatUUID("${UUID.randomUUID()}"),
-                    name = ChatName(contact.contactAlias?.value ?: "unknown"),
-                    photoUrl = contact.photoUrl,
-                    type = ChatType.Conversation,
-                    status = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending,
-                    contactIds = listOf(ContactId(0), ContactId(contactId ?: -1)),
-                    isMuted = ChatMuted.False,
-                    createdAt = now.toDateTime(),
-                    groupKey = null,
-                    host = null,
-                    pricePerMessage = null,
-                    escrowAmount = null,
-                    unlisted = ChatUnlisted.False,
-                    privateTribe = ChatPrivate.False,
-                    ownerPubKey = null,
-                    seen = Seen.False,
-                    metaData = null,
-                    myPhotoUrl = null,
-                    myAlias = null,
-                    pendingContactIds = emptyList(),
-                    latestMessageId = null,
-                    contentSeenAt = null,
-                    pinedMessage = null,
-                    notify = NotificationLevel.SeeAll
-                )
-
-                contactLock.withLock {
-                    queries.transaction {
-                        upsertNewContact(newContact, queries)
-                    }
-                }
-
-                chatLock.withLock {
-                    queries.transaction {
-                        upsertNewChat(
-                            newChat,
-                            moshi,
-                            SynchronizedMap<ChatId, Seen>(),
-                            queries,
-                            newContact,
-                            accountOwner.value?.nodePubKey
-                        )
-                    }
-                }
-            }
-        }
-    }
-
 
     override suspend fun updateOwnerAlias(alias: ContactAlias) {
         val queries = coreDB.getSphinxDatabaseQueries()
