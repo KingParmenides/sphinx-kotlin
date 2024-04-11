@@ -191,6 +191,12 @@ class ConnectManagerImpl: ConnectManager()
         _ownerInfoStateFlow.value = ownerInfo
 
         if (isConnected()) {
+            // It's called when invitee first init the dashboard
+            if (inviterContact != null) {
+                createContact(inviterContact!!)
+                inviterContact = null
+            }
+            // return always that the mqtt is connected
             return
         }
 
@@ -393,11 +399,7 @@ class ConnectManagerImpl: ConnectManager()
 
                     getReadMessages()
                     Log.d("SELLAMO", "fetchMessages")
-                }
 
-                if (inviterContact != null) {
-                    createContact(inviterContact!!)
-                    inviterContact = null
                 }
             }
         } catch (e: Exception) {
@@ -931,6 +933,7 @@ class ConnectManagerImpl: ConnectManager()
 
             // Ensure the owner is subscribed before set the inviter contact
             // The inviter will be added after the owner sets its alias and first init the dashboard
+
             subscribeOwnerMQTT()
 
             inviterContact = NewContact(
