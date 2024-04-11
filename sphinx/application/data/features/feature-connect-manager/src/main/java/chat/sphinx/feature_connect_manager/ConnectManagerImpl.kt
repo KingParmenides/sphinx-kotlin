@@ -31,6 +31,7 @@ import uniffi.sphinxrs.RunReturn
 import uniffi.sphinxrs.addContact
 import uniffi.sphinxrs.codeFromInvite
 import uniffi.sphinxrs.fetchMsgs
+import uniffi.sphinxrs.getDefaultTribeServer
 import uniffi.sphinxrs.getMsgsCounts
 import uniffi.sphinxrs.getReads
 import uniffi.sphinxrs.getSubscriptionTopic
@@ -51,7 +52,6 @@ import uniffi.sphinxrs.processInvite
 import uniffi.sphinxrs.read
 import uniffi.sphinxrs.rootSignMs
 import uniffi.sphinxrs.send
-import uniffi.sphinxrs.setBlockheight
 import uniffi.sphinxrs.setNetwork
 import uniffi.sphinxrs.signBytes
 import uniffi.sphinxrs.xpubFromSeed
@@ -356,10 +356,6 @@ class ConnectManagerImpl: ConnectManager()
                 val networkSetup = setNetwork(network)
                 handleRunReturn(networkSetup, client)
 
-                // Block height setup and handling
-                val blockSetup = setBlockheight(0.toUInt())
-                handleRunReturn(blockSetup, client)
-
                 // Subscribe to MQTT topic
                 val subtopic = getSubscriptionTopic(
                     ownerSeed!!,
@@ -399,7 +395,6 @@ class ConnectManagerImpl: ConnectManager()
 
                     getReadMessages()
                     Log.d("SELLAMO", "fetchMessages")
-
                 }
             }
         } catch (e: Exception) {
@@ -505,18 +500,23 @@ class ConnectManagerImpl: ConnectManager()
         }
     }
 
-    override fun createTribe(tribeServerPubKey: String, tribeJson: String) {
+    override fun createTribe(tribeJson: String) {
         val now = getTimestampInMilliseconds()
 
         try {
-           val createTribe = uniffi.sphinxrs.createTribe(
-                ownerSeed!!,
-                now,
-                getCurrentUserState(),
-                tribeServerPubKey,
-                tribeJson
-            )
-            handleRunReturn(createTribe, mqttClient!!)
+            val tribeServerPubKey = getTribeServerPubKey()
+            val createTribe = tribeServerPubKey?.let { tribePubKey ->
+                uniffi.sphinxrs.createTribe(
+                    ownerSeed!!,
+                    now,
+                    getCurrentUserState(),
+                    tribePubKey,
+                    tribeJson
+                )
+            }
+            if (createTribe != null) {
+                handleRunReturn(createTribe, mqttClient!!)
+            }
         }
         catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "createTribe ${e.message}")
@@ -584,6 +584,18 @@ class ConnectManagerImpl: ConnectManager()
             Log.e("MQTT_MESSAGES", "makeInvoice ${e.message}")
         }
         return null
+    }
+
+    override fun getTribeServerPubKey(): String? {
+        return try {
+            val defaultTribe = getDefaultTribeServer(
+                getCurrentUserState()
+            )
+            Log.d("MQTT_MESSAGES", "getDefaultTribeServer $defaultTribe")
+            defaultTribe
+        } catch (e: Exception) {
+            null
+        }
     }
 
     override fun processInvoicePayment(paymentRequest: String) {

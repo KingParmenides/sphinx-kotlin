@@ -439,6 +439,10 @@ abstract class SphinxRepository(
         connectManager.retrieveTribeMembersList(tribeServerPubKey, tribePubKey)
     }
 
+    override fun getTribeServerPubKey(): String? {
+        return connectManager.getTribeServerPubKey()
+    }
+
     override suspend fun exitAndDeleteTribe(tribe: Chat) {
         val queries = coreDB.getSphinxDatabaseQueries()
         applicationScope.launch(io) {
@@ -7197,8 +7201,7 @@ abstract class SphinxRepository(
                 val ownerAlias = accountOwner.value?.alias?.value ?: "unknown"
 
                 val tribeJson = createTribe.toNewCreateTribe(ownerAlias, imgUrl).toJson()
-                val tribeServerPubKey = "036b441c86acf790ff00694dfbf83e49cc8d537d166ec68b1077a719e61aa9bb42"
-                connectManager.createTribe(tribeServerPubKey, tribeJson)
+                connectManager.createTribe(tribeJson)
 
             } catch (e: Exception) { }
         }

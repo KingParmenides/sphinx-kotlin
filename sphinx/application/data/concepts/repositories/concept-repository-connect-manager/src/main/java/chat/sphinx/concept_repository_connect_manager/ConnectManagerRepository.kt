@@ -33,6 +33,8 @@ interface ConnectManagerRepository {
         tribeServerPubKey: String,
         tribePubKey: String
     )
+
+    fun getTribeServerPubKey(): String?
     suspend fun updateLspAndOwner(data: String) {}
     fun startRestoreProcess()
 
