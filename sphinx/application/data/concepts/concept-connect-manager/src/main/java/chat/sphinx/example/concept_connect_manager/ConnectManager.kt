@@ -85,7 +85,6 @@ abstract class ConnectManager {
     abstract fun addListener(listener: ConnectManagerListener): Boolean
     abstract fun removeListener(listener: ConnectManagerListener): Boolean
     abstract fun processChallengeSignature(challenge: String)
-//    abstract fun fetchContactsOnRestoreAccount()
     abstract fun fetchMessagesOnRestoreAccount(totalHighestIndex: Long?)
     abstract fun fetchFirstMessagesPerKey()
     abstract fun getAllMessagesCount()

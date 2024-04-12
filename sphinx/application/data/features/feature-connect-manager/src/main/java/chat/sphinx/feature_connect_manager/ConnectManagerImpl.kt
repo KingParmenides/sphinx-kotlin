@@ -52,6 +52,7 @@ import uniffi.sphinxrs.processInvite
 import uniffi.sphinxrs.read
 import uniffi.sphinxrs.rootSignMs
 import uniffi.sphinxrs.send
+import uniffi.sphinxrs.setBlockheight
 import uniffi.sphinxrs.setNetwork
 import uniffi.sphinxrs.signBytes
 import uniffi.sphinxrs.xpubFromSeed
@@ -357,6 +358,10 @@ class ConnectManagerImpl: ConnectManager()
                 // Network setup and handling
                 val networkSetup = setNetwork(network)
                 handleRunReturn(networkSetup, client)
+
+                // Block height setup and handling
+                val blockSetup = setBlockheight(0.toUInt())
+                handleRunReturn(blockSetup, client)
 
                 // Subscribe to MQTT topic
                 val subtopic = getSubscriptionTopic(
@@ -863,8 +868,8 @@ class ConnectManagerImpl: ConnectManager()
             if (restoreMnemonicWords?.isNotEmpty() == true)  {
 
                 val contactsToRestore = rr.msgs.filter {
-                    it.type?.toInt() == 33
-                }.map { it.sender }
+                    it.type?.toInt() == 33 || it.type?.toInt() == 11 || it.type?.toInt() == 10
+                }.map { it.sender }.distinct()
 
                 if (contactsToRestore.isNotEmpty()) {
                     notifyListeners {

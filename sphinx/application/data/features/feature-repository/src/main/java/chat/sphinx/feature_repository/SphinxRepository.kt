@@ -728,7 +728,7 @@ abstract class SphinxRepository(
                 delay(200L)
                 connectManager.fetchMessagesOnRestoreAccount(nextHighestIndex)
             } else {
-                delay(3000L) // Ensure messages are inserted before restoring owner info
+                delay(5000L) // Ensure messages are inserted before restoring owner info
                 restoreOwnerAliasAndPicture()
                 // Restore complete
             }
