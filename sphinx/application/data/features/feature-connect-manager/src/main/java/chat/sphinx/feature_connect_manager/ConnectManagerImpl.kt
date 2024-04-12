@@ -69,6 +69,7 @@ class ConnectManagerImpl: ConnectManager()
     private var restoreMnemonicWords: List<String>? = emptyList()
     private var inviterContact: NewContact? = null
     private var hasAttemptedReconnect = false
+    private var restoreLastOwnerIndex = 0
 
     private val _ownerInfoStateFlow: MutableStateFlow<OwnerInfo?> by lazy {
         MutableStateFlow(null)
@@ -877,21 +878,25 @@ class ConnectManagerImpl: ConnectManager()
                     Pair(it.sender, it.fromMe)
                 }
 
-                val accountOwner = rr.msgs.filter { msg ->
-                    msg.fromMe == true && !msg.sender.isNullOrEmpty()
-                }.maxByOrNull { msg -> msg.index?.toInt() ?: 0 }
-
                 if (tribesToRestore.isNotEmpty()) {
                     notifyListeners {
                         onRestoreTribes(tribesToRestore)
                     }
                 }
 
-                if (accountOwner?.sender != null) {
-                    notifyListeners {
-                        onRestoreOwnerAliasAndPicture(accountOwner.sender!!)
-                    }
-                }
+//                val accountOwner = rr.msgs.filter { msg ->
+//                    msg.fromMe == true && msg.type?.toInt() != 14
+//                }.maxByOrNull { msg -> msg.index?.toInt() ?: 0 }
+
+
+//                if (accountOwner?.sender != null &&
+//                    (accountOwner.index?.toIntOrNull() ?: 0) > restoreLastOwnerIndex
+//                ) {
+//                    restoreLastOwnerIndex = accountOwner.index?.toInt() ?: 0
+//                    notifyListeners {
+//                        onRestoreOwnerAliasAndPicture(accountOwner.sender!!)
+//                    }
+//                }
             }
 
             rr.msgs.forEach { msg ->

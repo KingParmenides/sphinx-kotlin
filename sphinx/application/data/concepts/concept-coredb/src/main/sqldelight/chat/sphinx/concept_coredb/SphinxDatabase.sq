@@ -829,6 +829,15 @@ SELECT id
 FROM messageDbo
 WHERE uuid = ?;
 
+messageGetOwnerInfo:
+SELECT *
+FROM messageDbo
+WHERE id = (
+    SELECT MAX(id)
+    FROM messageDbo
+    WHERE chat_id < 9999 AND sender = 0
+);
+
 messageGetAllToShowByChatIdWithLimit:
 SELECT *
 FROM messageDbo

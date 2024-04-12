@@ -705,18 +705,18 @@ abstract class SphinxRepository(
         }
     }
 
-    override fun onRestoreOwnerAliasAndPicture(msgSender: String) {
-        applicationScope.launch(io) {
-            val queries = coreDB.getSphinxDatabaseQueries()
-            val owner = queries.contactGetOwner().executeAsOneOrNull()
+    private suspend fun restoreOwnerAliasAndPicture() {
+        val queries = coreDB.getSphinxDatabaseQueries()
+        messageLock.withLock {
+            val ownerMsg = queries.messageGetOwnerInfo().executeAsOneOrNull()
 
-            if (owner?.alias?.value.isNullOrEmpty()) {
-                val contactInfo = msgSender.toMsgSender(moshi)
-
-                queries.contactUpdateOwnerInfo(
-                    contactInfo.alias?.toContactAlias(),
-                    contactInfo.photo_url?.toPhotoUrl(),
-                )
+            if (ownerMsg != null) {
+                contactLock.withLock {
+                    queries.contactUpdateOwnerInfo(
+                        ownerMsg.sender_alias?.value?.toContactAlias(),
+                        ownerMsg.sender_pic,
+                    )
+                }
             }
         }
     }
@@ -728,6 +728,8 @@ abstract class SphinxRepository(
                 delay(200L)
                 connectManager.fetchMessagesOnRestoreAccount(nextHighestIndex)
             } else {
+                delay(3000L) // Ensure messages are inserted before restoring owner info
+                restoreOwnerAliasAndPicture()
                 // Restore complete
             }
         }
