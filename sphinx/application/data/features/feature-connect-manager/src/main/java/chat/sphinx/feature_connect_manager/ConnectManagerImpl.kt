@@ -176,7 +176,6 @@ class ConnectManagerImpl: ConnectManager()
                 runReturn,
                 mqttClient!!
             )
-            Log.e("MQTT_MESSAGES", "ADD CONTACT!")
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "add contact excp $e")
         }
@@ -653,7 +652,6 @@ class ConnectManagerImpl: ConnectManager()
     override fun fetchMessagesOnRestoreAccount(totalHighestIndex: Long?) {
         try {
             val limit = 250
-            Log.e("MQTT_MESSAGES", "SE EJECUTO fetchMsgsBatch }")
             val fetchMessages = uniffi.sphinxrs.fetchMsgsBatch(
                 ownerSeed!!,
                 getTimestampInMilliseconds(),
@@ -674,8 +672,6 @@ class ConnectManagerImpl: ConnectManager()
 
     override fun fetchFirstMessagesPerKey() {
         try {
-            Log.e("MQTT_MESSAGES", "SE EJECUTO fetchFirstMsgsPerKey }")
-
             val fetchFirstMsg = uniffi.sphinxrs.fetchFirstMsgsPerKey(
                 ownerSeed!!,
                 getTimestampInMilliseconds(),
@@ -889,19 +885,6 @@ class ConnectManagerImpl: ConnectManager()
                     }
                 }
 
-//                val accountOwner = rr.msgs.filter { msg ->
-//                    msg.fromMe == true && msg.type?.toInt() != 14
-//                }.maxByOrNull { msg -> msg.index?.toInt() ?: 0 }
-
-
-//                if (accountOwner?.sender != null &&
-//                    (accountOwner.index?.toIntOrNull() ?: 0) > restoreLastOwnerIndex
-//                ) {
-//                    restoreLastOwnerIndex = accountOwner.index?.toInt() ?: 0
-//                    notifyListeners {
-//                        onRestoreOwnerAliasAndPicture(accountOwner.sender!!)
-//                    }
-//                }
             }
 
             rr.msgs.forEach { msg ->
