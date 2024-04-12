@@ -174,6 +174,7 @@ class ConnectManagerImpl: ConnectManager()
                 runReturn,
                 mqttClient!!
             )
+            Log.e("MQTT_MESSAGES", "ADD CONTACT!")
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "add contact excp $e")
         }
@@ -646,6 +647,7 @@ class ConnectManagerImpl: ConnectManager()
     override fun fetchMessagesOnRestoreAccount(totalHighestIndex: Long?) {
         try {
             val limit = 250
+            Log.e("MQTT_MESSAGES", "SE EJECUTO fetchMsgsBatch }")
             val fetchMessages = uniffi.sphinxrs.fetchMsgsBatch(
                 ownerSeed!!,
                 getTimestampInMilliseconds(),
@@ -666,6 +668,8 @@ class ConnectManagerImpl: ConnectManager()
 
     override fun fetchFirstMessagesPerKey() {
         try {
+            Log.e("MQTT_MESSAGES", "SE EJECUTO fetchFirstMsgsPerKey }")
+
             val fetchFirstMsg = uniffi.sphinxrs.fetchFirstMsgsPerKey(
                 ownerSeed!!,
                 getTimestampInMilliseconds(),
@@ -852,49 +856,58 @@ class ConnectManagerImpl: ConnectManager()
             Log.d("MQTT_MESSAGES", "===> BALANCE ${newBalance.toLong()}")
         }
 
-        if (restoreMnemonicWords?.isNotEmpty() == true)  {
-            val contactsToRestore = rr.msgs.filter { it.type == 33.toUByte() }.map { it.sender }
-            val tribesToRestore = rr.msgs.filter {
-                it.type == 20.toUByte() || it.type == 14.toUByte()
-            }.map {
-                Pair(it.sender, it.fromMe)
-            }
-
-            val accountOwner = rr.msgs.filter { msg ->
-                msg.fromMe == true && !msg.sender.isNullOrEmpty()
-                        && msg.type?.toInt() != 14
-                        && msg.type?.toInt() != 20
-            }.maxByOrNull { msg -> msg.index?.toIntOrNull() ?: Int.MIN_VALUE }
-
-            if (contactsToRestore.isNotEmpty() || tribesToRestore.isNotEmpty()) {
-                notifyListeners {
-                    onRestoreContacts(contactsToRestore)
-                    onRestoreTribes(tribesToRestore)
-                }
-            }
-
-            if (accountOwner?.sender != null) {
-                notifyListeners {
-                    onRestoreOwnerAliasAndPicture(accountOwner.sender!!)
-                }
-            }
-        }
-
         // Process each message in the new msgs array
-        rr.msgs.forEach { msg ->
+        if (rr.msgs.isNotEmpty()) {
 
-            notifyListeners {
-                onMessage(
-                    msg.message.orEmpty(),
-                    msg.sender.orEmpty(),
-                    msg.type?.toInt() ?: 0,
-                    msg.uuid.orEmpty(),
-                    msg.index.orEmpty(),
-                    msg.timestamp?.toLong(),
-                    msg.sentTo.orEmpty(),
-                    msg.msat?.let { convertMillisatsToSats(it) },
-                    msg.fromMe
-                )
+            if (restoreMnemonicWords?.isNotEmpty() == true)  {
+
+                val contactsToRestore = rr.msgs.filter {
+                    it.type?.toInt() == 33
+                }.map { it.sender }
+
+                if (contactsToRestore.isNotEmpty()) {
+                    notifyListeners {
+                        onRestoreContacts(contactsToRestore)
+                    }
+                }
+
+                val tribesToRestore = rr.msgs.filter {
+                    it.type?.toInt() == 20 || it.type?.toInt() == 14
+                }.map {
+                    Pair(it.sender, it.fromMe)
+                }
+
+                val accountOwner = rr.msgs.filter { msg ->
+                    msg.fromMe == true && !msg.sender.isNullOrEmpty()
+                }.maxByOrNull { msg -> msg.index?.toInt() ?: 0 }
+
+                if (tribesToRestore.isNotEmpty()) {
+                    notifyListeners {
+                        onRestoreTribes(tribesToRestore)
+                    }
+                }
+
+                if (accountOwner?.sender != null) {
+                    notifyListeners {
+                        onRestoreOwnerAliasAndPicture(accountOwner.sender!!)
+                    }
+                }
+            }
+
+            rr.msgs.forEach { msg ->
+                notifyListeners {
+                    onMessage(
+                        msg.message.orEmpty(),
+                        msg.sender.orEmpty(),
+                        msg.type?.toInt() ?: 0,
+                        msg.uuid.orEmpty(),
+                        msg.index.orEmpty(),
+                        msg.timestamp?.toLong(),
+                        msg.sentTo.orEmpty(),
+                        msg.msat?.let { convertMillisatsToSats(it) },
+                        msg.fromMe
+                    )
+                }
             }
         }
 
@@ -943,11 +956,6 @@ class ConnectManagerImpl: ConnectManager()
 
             val code = codeFromInvite(inviteCode!!)
 
-            // Ensure the owner is subscribed before set the inviter contact
-            // The inviter will be added after the owner sets its alias and first init the dashboard
-
-            subscribeOwnerMQTT()
-
             inviterContact = NewContact(
                 null,
                 okKey,
@@ -958,6 +966,8 @@ class ConnectManagerImpl: ConnectManager()
                 code,
                 null
             )
+
+            subscribeOwnerMQTT()
 
             Log.d("MQTT_MESSAGES", "=> inviterInfo $inviterInfo")
         }

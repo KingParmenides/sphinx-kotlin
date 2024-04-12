@@ -572,7 +572,7 @@ abstract class SphinxRepository(
                         // Handled on onRestoreContacts
                     }
                     else -> {
-                        val defaultMsg = Msg(
+                        val message = if (msg.isNotEmpty()) msg.toMsg(moshi) else Msg(
                             null,
                             null,
                             null,
@@ -586,30 +586,22 @@ abstract class SphinxRepository(
                             null
                         )
 
-                        val defaultSender = MsgSender(
-                            sentTo,
-                            null,
-                            null,
-                            null,
-                            true,
-                            null,
-                            null,
-                            null
-                        )
+                        val messageSender = msgSender.toMsgSender(moshi)
 
-                        val message = if (msg.isNotEmpty()) msg.toMsg(moshi) else defaultMsg
-                        val contactInfo =
-                            if (msgSender.isNotEmpty()) msgSender.toMsgSender(moshi) else defaultSender
-                        val messageId = if (msgIndex.isNotEmpty()) MessageId(msgIndex.toLong()) else return@launch
-                        val messageUuid = msgUuid.toMessageUUID() ?: return@launch
-                        val originalUUID = message.originalUuid?.toMessageUUID()
-                        val timestamp = msgTimestamp?.toDateTime()
-                        val date = message.date?.toDateTime()
-                        val realAmount = if (fromMe == true) message.amount?.milliSatsToSats() else amount?.toSat()
-                        val paymentRequest = message.invoice?.toLightningPaymentRequestOrNull()
-                        val bolt11 = paymentRequest?.let { Bolt11.decode(it) }
-                        val paymentHash = paymentRequest?.let {
-                            connectManager.retrievePaymentHash(it.value)?.toLightningPaymentHash()
+                        val contactInfo = if (fromMe == false) {
+                            messageSender
+                        } else {
+                            // Add
+                            MsgSender(
+                                sentTo,
+                                messageSender.alias,
+                                messageSender.photo_url,
+                                messageSender.person,
+                                messageSender.confirmed,
+                                messageSender.code,
+                                messageSender.host,
+                                messageSender.role
+                            )
                         }
 
                         if (messageType is MessageType.Purchase.Processing) {
@@ -620,6 +612,18 @@ abstract class SphinxRepository(
                                     paidAmount
                                 )
                             }
+                        }
+
+                        val messageId = if (msgIndex.isNotEmpty()) MessageId(msgIndex.toLong()) else return@launch
+                        val messageUuid = msgUuid.toMessageUUID() ?: return@launch
+                        val originalUUID = message.originalUuid?.toMessageUUID()
+                        val timestamp = msgTimestamp?.toDateTime()
+                        val date = message.date?.toDateTime()
+                        val realAmount = if (fromMe == true) message.amount?.milliSatsToSats() else amount?.toSat()
+                        val paymentRequest = message.invoice?.toLightningPaymentRequestOrNull()
+                        val bolt11 = paymentRequest?.let { Bolt11.decode(it) }
+                        val paymentHash = paymentRequest?.let {
+                            connectManager.retrievePaymentHash(it.value)?.toLightningPaymentHash()
                         }
 
                         upsertMqttMessage(
@@ -666,7 +670,7 @@ abstract class SphinxRepository(
                     inviteCode = contactInfo.code,
                     invitePrice = null
                 )
-            }
+            }.sortedBy { it.confirmed }  // Sort so that confirmed contacts are at the start of the list
 
             newContactList.forEach { newContact ->
                 delay(100L)
