@@ -134,7 +134,7 @@ interface MessageRepository {
         originalUuid: MessageUUID?,
         timestamp: DateTime?,
         date: DateTime?,
-        isSent: Boolean,
+        fromMe: Boolean,
         amount: Sat?,
         paymentRequest: LightningPaymentRequest?,
         paymentHash: LightningPaymentHash?,

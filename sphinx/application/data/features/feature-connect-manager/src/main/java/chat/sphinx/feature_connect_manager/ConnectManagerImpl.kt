@@ -884,7 +884,6 @@ class ConnectManagerImpl: ConnectManager()
                         onRestoreTribes(tribesToRestore)
                     }
                 }
-
             }
 
             rr.msgs.forEach { msg ->

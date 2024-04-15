@@ -657,7 +657,10 @@ abstract class SphinxRepository(
                 } catch (e: Exception) {
                     null
                 }
-            }
+            }.groupBy { it.pubkey }
+                .map { (_, group) ->
+                    group.find { it.confirmed } ?: group.first()
+                }
 
             val newContactList = contactList.map { contactInfo ->
                 NewContact(
@@ -670,7 +673,7 @@ abstract class SphinxRepository(
                     inviteCode = contactInfo.code,
                     invitePrice = null
                 )
-            }.sortedBy { it.confirmed }  // Sort so that confirmed contacts are at the start of the list
+            }
 
             newContactList.forEach { newContact ->
                 delay(100L)
@@ -975,7 +978,7 @@ abstract class SphinxRepository(
         originalUuid: MessageUUID?,
         timestamp: DateTime?,
         date: DateTime?,
-        isSent: Boolean,
+        fromMe: Boolean,
         amount: Sat?,
         paymentRequest: LightningPaymentRequest?,
         paymentHash: LightningPaymentHash?,
@@ -1003,7 +1006,7 @@ abstract class SphinxRepository(
 
             val existingMessage = queries.messageGetByUUID(msgUuid).executeAsOneOrNull()
 
-            if (isSent) {
+            if (fromMe) {
                 val messageId = existingMessage?.id
                 val existingMessageMedia = messageId?.let {
                     queries.messageMediaGetById(it).executeAsOneOrNull()
@@ -1043,9 +1046,9 @@ abstract class SphinxRepository(
             } else msgSender.alias?.toSenderAlias()
 
             val status = when {
-                isSent && existingMessage?.payment_request != null -> MessageStatus.Pending
-                isSent && existingMessage?.payment_request == null -> MessageStatus.Confirmed
-                !isSent && existingMessage?.payment_request != null -> MessageStatus.Pending
+                fromMe && existingMessage?.payment_request != null -> MessageStatus.Pending
+                fromMe && existingMessage?.payment_request == null -> MessageStatus.Confirmed
+                !fromMe && existingMessage?.payment_request != null -> MessageStatus.Pending
                 else -> MessageStatus.Received
             }
 
@@ -1056,7 +1059,7 @@ abstract class SphinxRepository(
                 uuid = msgUuid,
                 chatId = ChatId(chatId),
                 type = msgType,
-                sender = if (isSent) ContactId(0) else contact?.id ?: ContactId(chatId) ,
+                sender = if (fromMe) ContactId(0) else contact?.id ?: ContactId(chatId) ,
                 receiver = ContactId(0),
                 amount = bolt11?.getSatsAmount() ?: existingMessage?.amount ?: amount ?: Sat(0L),
                 paymentRequest = existingMessage?.payment_request ?: paymentRequest,
@@ -1108,7 +1111,7 @@ abstract class SphinxRepository(
                 queries.chatUpdateSeen(Seen.False, ChatId(chatId))
             }
 
-            if (contact?.photoUrl?.value != msgSender.photo_url) {
+            if (!fromMe && contact?.photoUrl?.value != msgSender.photo_url) {
 
                 contact?.id?.let { contactId ->
                     contactLock.withLock {
@@ -2775,9 +2778,11 @@ abstract class SphinxRepository(
             val exitingContact = contact.lightningNodePubKey
                 ?.let { getContactByPubKey(it).firstOrNull() }
 
+            val status = (contact.confirmed || exitingContact?.status?.isConfirmed() == true)
+
             if (exitingContact?.nodePubKey != null) {
-                val contactStatus = if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending
-                val chatStatus = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending
+                val contactStatus = if (status) ContactStatus.Confirmed else ContactStatus.Pending
+                val chatStatus = if (status) ChatStatus.Approved else ChatStatus.Pending
 
                 contactLock.withLock {
                     queries.contactUpdateDetails(
@@ -2821,7 +2826,7 @@ abstract class SphinxRepository(
                     photoUrl = contact.photoUrl,
                     privatePhoto = PrivatePhoto.False,
                     isOwner = Owner.False,
-                    status = if (contact.confirmed) ContactStatus.Confirmed else ContactStatus.Pending,
+                    status = if (status) ContactStatus.Confirmed else ContactStatus.Pending,
                     rsaPublicKey = null,
                     deviceId = null,
                     createdAt = now.toDateTime(),
@@ -2842,7 +2847,7 @@ abstract class SphinxRepository(
                     ),
                     photoUrl = contact.photoUrl,
                     type = ChatType.Conversation,
-                    status = if (contact.confirmed) ChatStatus.Approved else ChatStatus.Pending,
+                    status = if (status) ChatStatus.Approved else ChatStatus.Pending,
                     contactIds = listOf(ContactId(0), ContactId(contactId ?: -1)),
                     isMuted = ChatMuted.False,
                     createdAt = now.toDateTime(),
