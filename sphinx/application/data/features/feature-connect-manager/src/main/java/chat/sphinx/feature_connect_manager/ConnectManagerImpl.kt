@@ -300,7 +300,7 @@ class ConnectManagerImpl: ConnectManager()
 
                         notifyListeners {
                             listenToOwnerCreation {
-                                Log.d("MQTT_MESSAGES", "OWNER EXIST!!!!!!!!!")
+                                Log.d("MQTT_MESSAGES", "OWNER EXIST!")
                                 handleMessageArrived(topic, message)
                             }
                         }
@@ -484,7 +484,8 @@ class ConnectManagerImpl: ConnectManager()
         tribeHost: String,
         tribePubKey: String,
         tribeRouteHint: String,
-        isPrivate: Boolean
+        isPrivate: Boolean,
+        userAlias: String
     ) {
         val now = getTimestampInMilliseconds()
 
@@ -495,7 +496,7 @@ class ConnectManagerImpl: ConnectManager()
                 getCurrentUserState(),
                 tribePubKey,
                 tribeRouteHint,
-                ownerInfoStateFlow.value?.alias ?: "",
+                userAlias,
                 1000.toULong(),
                 isPrivate
             )

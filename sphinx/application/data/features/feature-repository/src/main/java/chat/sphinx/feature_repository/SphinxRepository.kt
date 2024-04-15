@@ -344,9 +344,10 @@ abstract class SphinxRepository(
         tribeRouteHint: String,
         tribeName: String,
         tribePicture: String?,
-        isPrivate: Boolean
+        isPrivate: Boolean,
+        userAlias: String
     ) {
-        connectManager.joinToTribe(tribeHost, tribePubKey, tribeRouteHint, isPrivate)
+        connectManager.joinToTribe(tribeHost, tribePubKey, tribeRouteHint, isPrivate, userAlias)
 
         applicationScope.launch(io) {
             val queries = coreDB.getSphinxDatabaseQueries()
@@ -376,7 +377,7 @@ abstract class SphinxRepository(
                 seen = Seen.False,
                 metaData = null,
                 myPhotoUrl = null,
-                myAlias = null,
+                myAlias = userAlias.toChatAlias(),
                 pendingContactIds = emptyList(),
                 latestMessageId = null,
                 contentSeenAt = null,

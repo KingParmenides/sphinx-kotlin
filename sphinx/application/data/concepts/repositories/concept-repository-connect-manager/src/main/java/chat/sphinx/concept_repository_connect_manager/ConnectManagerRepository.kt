@@ -26,7 +26,8 @@ interface ConnectManagerRepository {
         tribeRouteHint: String,
         tribeName: String,
         tribePicture: String?,
-        isPrivate: Boolean
+        isPrivate: Boolean,
+        userAlias: String
     )
 
     fun getTribeMembers(
