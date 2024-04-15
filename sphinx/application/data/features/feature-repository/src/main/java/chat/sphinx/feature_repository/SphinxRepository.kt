@@ -315,7 +315,7 @@ abstract class SphinxRepository(
 
             if (mnemonic != null && okKey != null) {
                 connectManager.initializeMqttAndSubscribe(
-                    "tcp://34.229.52.200:1883",
+                    "34.229.52.200:1883",
                     mnemonic,
                     ownerInfo
                 )

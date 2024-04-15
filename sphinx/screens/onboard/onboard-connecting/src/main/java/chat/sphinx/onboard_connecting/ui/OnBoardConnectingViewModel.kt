@@ -195,7 +195,7 @@ internal class OnBoardConnectingViewModel @Inject constructor(
                 if (signerManager.isPhoneSignerSettingUp()) {
                     continuePhoneSignerSetup()
                 } else {
-                    connectManagerRepository.createOwnerAccount("tcp://34.229.52.200:1883")
+                    connectManagerRepository.createOwnerAccount("34.229.52.200:1883")
 
 //                    submitSideEffect(OnBoardConnectingSideEffect.InvalidCode)
 //                    navigator.popBackStack()

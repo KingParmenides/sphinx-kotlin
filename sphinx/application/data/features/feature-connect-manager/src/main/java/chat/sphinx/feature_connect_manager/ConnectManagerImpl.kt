@@ -61,7 +61,7 @@ import java.util.Calendar
 
 class ConnectManagerImpl: ConnectManager()
 {
-    private var mixerIp: String? = null
+    private var _mixerIp: String? = null
     private var walletMnemonic: WalletMnemonic? = null
     private var mqttClient: MqttAsyncClient? = null
     private val network = "regtest"
@@ -77,6 +77,10 @@ class ConnectManagerImpl: ConnectManager()
     }
     override val ownerInfoStateFlow: StateFlow<OwnerInfo?>
         get() = _ownerInfoStateFlow.asStateFlow()
+
+    private var mixerIp: String?
+        get() = _mixerIp?.let { "tcp://$it" }
+        set(value) { _mixerIp = value }
 
     // Key Generation and Management
     override fun createAccount(lspIp: String) {
@@ -95,7 +99,7 @@ class ConnectManagerImpl: ConnectManager()
 
                 if (inviteCode != null) {
                     invite = processInvite(ownerSeed!!, now, getCurrentUserState(), inviteCode!!)
-                    mixerIp = invite.lspHost
+                    _mixerIp = invite.lspHost
                 }
 
                 connectToMQTT(mixerIp!!, xPub, now, sig, invite)
@@ -188,7 +192,7 @@ class ConnectManagerImpl: ConnectManager()
         mnemonicWords: WalletMnemonic,
         ownerInfo: OwnerInfo
     ) {
-        mixerIp = serverUri
+        _mixerIp = serverUri
         walletMnemonic = mnemonicWords
         _ownerInfoStateFlow.value = ownerInfo
 
@@ -230,7 +234,7 @@ class ConnectManagerImpl: ConnectManager()
             ownerSeed = seed
 
             connectToMQTT(
-                serverUri,
+                mixerIp!!,
                 xPub,
                 now,
                 sig,
@@ -545,7 +549,7 @@ class ConnectManagerImpl: ConnectManager()
                 ownerSeed!!,
                 now,
                 getCurrentUserState(),
-                mixerIp!!,
+                _mixerIp!!,
                 convertSatsToMillisats(sats),
                 ownerInfoStateFlow.value?.alias ?: "",
                 null,
