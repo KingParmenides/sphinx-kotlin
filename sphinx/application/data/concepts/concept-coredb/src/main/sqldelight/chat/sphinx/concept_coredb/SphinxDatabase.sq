@@ -509,7 +509,7 @@ UPDATE contactDbo
 SET alias = :alias,
     photo_url = :photo_url,
     status = :status
-WHERE id = ?;
+WHERE id = ? AND id != 0;
 
 contactUpdateInvitee:
 UPDATE contactDbo
