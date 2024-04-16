@@ -208,7 +208,7 @@ internal class OnBoardConnectFragment: SideEffectFragment<
                     textViewOnboardConnectTitle.text = getString(R.string.on_board_new_user)
                     editTextCodeInput.hint = getString(R.string.on_board_connect_paste_connection_code)
                     imageButtonScanner.visible
-                    layoutConstrainSkipContainer.visible
+//                    layoutConstrainSkipContainer.visible
                 }
             }
             is OnBoardConnectViewState.ExistingUser -> {

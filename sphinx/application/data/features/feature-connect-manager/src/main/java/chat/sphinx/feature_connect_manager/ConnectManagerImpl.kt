@@ -947,9 +947,9 @@ class ConnectManagerImpl: ConnectManager()
         }
 
         rr.inviterContactInfo?.let { inviterInfo ->
-            val parts = inviterInfo.split("_", limit = 2)
+            val parts = inviterInfo.split("_")
             val okKey = parts.getOrNull(0)?.toLightningNodePubKey()
-            val routeHint = parts.getOrNull(1)?.toLightningRouteHint()
+            val routeHint = "${parts.getOrNull(1)}_${parts.getOrNull(2)}".toLightningRouteHint()
 
             val code = codeFromInvite(inviteCode!!)
 
