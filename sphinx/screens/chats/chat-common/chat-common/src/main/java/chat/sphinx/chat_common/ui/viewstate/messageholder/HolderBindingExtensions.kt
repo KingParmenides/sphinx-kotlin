@@ -459,6 +459,7 @@ internal inline fun LayoutMessageHolderBinding.setUnsupportedMessageTypeLayout(
                 MessageType.BotRes,
                 MessageType.BotCmd,
                 MessageType.BotInstall,
+                MessageType.ContactKeyRecord,
                 is MessageType.Unknown -> {
                     getString(R.string.placeholder_unsupported_message_type_default)
                 }
@@ -2226,7 +2227,11 @@ internal inline fun LayoutMessageHolderBinding.setGroupActionIndicatorLayout(
             MessageType.GroupAction.Leave -> {
                 setGroupActionAnnouncementLayout(groupActionDetails)
             }
-            MessageType.GroupAction.Kick,
+            MessageType.GroupAction.Kick -> {
+                if (!groupActionDetails.isAdminView) {
+                    setGroupActionAnnouncementLayout(groupActionDetails)
+                }
+            }
             MessageType.GroupAction.TribeDelete -> {
                 if (!groupActionDetails.isAdminView) {
                     setGroupActionMemberRemovalLayout(groupActionDetails)
@@ -2296,6 +2301,13 @@ private inline fun LayoutMessageHolderBinding.setGroupActionAnnouncementLayout(
             MessageType.GroupAction.MemberApprove -> {
                 if (groupActionDetails.chatType == ChatType.Tribe) {
                     root.context.getString(R.string.tribe_welcome_announcement_member_side)
+                } else {
+                    null
+                }
+            }
+            MessageType.GroupAction.Kick -> {
+                if (groupActionDetails.chatType == ChatType.Tribe) {
+                    root.context.getString(R.string.tribe_leave_announcement, groupActionDetails.subjectName)
                 } else {
                     null
                 }

@@ -250,6 +250,9 @@ inline fun Int.toMessageType(): MessageType =
         MessageType.CALL_LINK -> {
             MessageType.CallLink
         }
+        MessageType.CONTACT_KEY_RECORD -> {
+            MessageType.ContactKeyRecord
+        }
         else -> {
             MessageType.Unknown(this)
         }
@@ -290,6 +293,7 @@ inline fun Int.toMessageType(): MessageType =
  *  - 30 (Query)
  *  - 31 (Query Response)
  *  - 32 (Call Link)
+ *  - 33 (Contact Key Record)
  *
  * https://github.com/stakwork/sphinx-relay/blob/7f8fd308101b5c279f6aac070533519160aa4a9f/src/constants.ts#L29
  * */
@@ -329,6 +333,7 @@ sealed class MessageType {
         const val QUERY = 30
         const val QUERY_RESPONSE = 31
         const val CALL_LINK = 32
+        const val CONTACT_KEY_RECORD = 33
 
         const val CAN_CONTAIN_MEDIA = true
         const val CAN_NOT_CONTAIN_MEDIA = false
@@ -726,5 +731,16 @@ sealed class MessageType {
 
         override val show: Boolean
             get() = DO_NOT_SHOW
+    }
+
+    object ContactKeyRecord : MessageType() {
+        override val canContainMedia: Boolean
+            get() = CAN_NOT_CONTAIN_MEDIA
+
+        override val show: Boolean
+            get() = DO_NOT_SHOW
+
+        override val value: Int
+            get() = CONTACT_KEY_RECORD
     }
 }

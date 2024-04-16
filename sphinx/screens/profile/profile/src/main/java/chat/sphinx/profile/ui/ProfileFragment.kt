@@ -207,7 +207,7 @@ internal class ProfileFragment: SideEffectFragment<
                         lifecycleScope.launch(viewModel.mainImmediate) {
                             owner.nodePubKey?.let { pubKey ->
                                 val key = owner.routeHint?.let { routeHint ->
-                                    "${pubKey.value}:${routeHint.value}"
+                                    "${pubKey.value}_${routeHint.value}"
                                 } ?: pubKey.value
 
                                 profileNavigator.toQRCodeDetail(key, getString(R.string.profile_qr_code_header_name))

@@ -422,7 +422,7 @@ internal interface _UniFFILib : Library {
     ): RustBuffer.ByValue
     fun uniffi_sphinxrs_fn_func_set_blockheight(`blockheight`: Int,_uniffi_out_err: RustCallStatus, 
     ): RustBuffer.ByValue
-    fun uniffi_sphinxrs_fn_func_add_contact(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`toPubkey`: RustBuffer.ByValue,`routeHint`: RustBuffer.ByValue,`myAlias`: RustBuffer.ByValue,`myImg`: RustBuffer.ByValue,`amtMsat`: Long,`inviteCode`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
+    fun uniffi_sphinxrs_fn_func_add_contact(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`toPubkey`: RustBuffer.ByValue,`routeHint`: RustBuffer.ByValue,`myAlias`: RustBuffer.ByValue,`myImg`: RustBuffer.ByValue,`amtMsat`: Long,`inviteCode`: RustBuffer.ByValue,`theirAlias`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_sphinxrs_fn_func_get_contact(`state`: RustBuffer.ByValue,`pubkey`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
     ): RustBuffer.ByValue
@@ -480,9 +480,15 @@ internal interface _UniFFILib : Library {
     ): RustBuffer.ByValue
     fun uniffi_sphinxrs_fn_func_set_push_token(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`pushToken`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
     ): RustBuffer.ByValue
-    fun uniffi_sphinxrs_fn_func_fetch_msgs_batch(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`lastMsgIdx`: Long,`limit`: RustBuffer.ByValue,`reverse`: RustBuffer.ByValue,`isRestore`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
+    fun uniffi_sphinxrs_fn_func_get_msgs_counts(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
     ): RustBuffer.ByValue
-    fun uniffi_sphinxrs_fn_func_fetch_msgs_batch_okkey(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`lastMsgIdx`: Long,`limit`: RustBuffer.ByValue,`reverse`: RustBuffer.ByValue,`isRestore`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
+    fun uniffi_sphinxrs_fn_func_fetch_msgs_batch(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`lastMsgIdx`: Long,`limit`: RustBuffer.ByValue,`reverse`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_sphinxrs_fn_func_fetch_msgs_batch_okkey(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`lastMsgIdx`: Long,`limit`: RustBuffer.ByValue,`reverse`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_sphinxrs_fn_func_fetch_first_msgs_per_key(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`lastMsgIdx`: Long,`limit`: RustBuffer.ByValue,`reverse`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_sphinxrs_fn_func_fetch_payments(`seed`: RustBuffer.ByValue,`uniqueTime`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,`lastMsgIdx`: RustBuffer.ByValue,`limit`: RustBuffer.ByValue,`scid`: RustBuffer.ByValue,`remoteOnly`: RustBuffer.ByValue,`minMsat`: RustBuffer.ByValue,_uniffi_out_err: RustCallStatus, 
     ): RustBuffer.ByValue
     fun ffi_sphinxrs_rustbuffer_alloc(`size`: Int,_uniffi_out_err: RustCallStatus, 
     ): RustBuffer.ByValue
@@ -608,9 +614,15 @@ internal interface _UniFFILib : Library {
     ): Short
     fun uniffi_sphinxrs_checksum_func_set_push_token(
     ): Short
+    fun uniffi_sphinxrs_checksum_func_get_msgs_counts(
+    ): Short
     fun uniffi_sphinxrs_checksum_func_fetch_msgs_batch(
     ): Short
     fun uniffi_sphinxrs_checksum_func_fetch_msgs_batch_okkey(
+    ): Short
+    fun uniffi_sphinxrs_checksum_func_fetch_first_msgs_per_key(
+    ): Short
+    fun uniffi_sphinxrs_checksum_func_fetch_payments(
     ): Short
     fun ffi_sphinxrs_uniffi_contract_version(
     ): Int
@@ -716,7 +728,7 @@ private fun uniffiCheckApiChecksums(lib: _UniFFILib) {
     if (lib.uniffi_sphinxrs_checksum_func_set_blockheight() != 43943.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_sphinxrs_checksum_func_add_contact() != 11442.toShort()) {
+    if (lib.uniffi_sphinxrs_checksum_func_add_contact() != 30931.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_sphinxrs_checksum_func_get_contact() != 19847.toShort()) {
@@ -803,10 +815,19 @@ private fun uniffiCheckApiChecksums(lib: _UniFFILib) {
     if (lib.uniffi_sphinxrs_checksum_func_set_push_token() != 7668.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_sphinxrs_checksum_func_fetch_msgs_batch() != 65179.toShort()) {
+    if (lib.uniffi_sphinxrs_checksum_func_get_msgs_counts() != 29743.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_sphinxrs_checksum_func_fetch_msgs_batch_okkey() != 11004.toShort()) {
+    if (lib.uniffi_sphinxrs_checksum_func_fetch_msgs_batch() != 22256.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_sphinxrs_checksum_func_fetch_msgs_batch_okkey() != 330.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_sphinxrs_checksum_func_fetch_first_msgs_per_key() != 29398.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_sphinxrs_checksum_func_fetch_payments() != 18180.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1012,11 +1033,13 @@ data class Msg (
     var `message`: String?, 
     var `type`: UByte?, 
     var `uuid`: String?, 
+    var `tag`: String?, 
     var `index`: String?, 
     var `sender`: String?, 
     var `msat`: ULong?, 
     var `timestamp`: ULong?, 
-    var `sentTo`: String?
+    var `sentTo`: String?, 
+    var `fromMe`: Boolean?
 ) {
     
 }
@@ -1029,9 +1052,11 @@ public object FfiConverterTypeMsg: FfiConverterRustBuffer<Msg> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterOptionalULong.read(buf),
             FfiConverterOptionalULong.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalBoolean.read(buf),
         )
     }
 
@@ -1039,22 +1064,26 @@ public object FfiConverterTypeMsg: FfiConverterRustBuffer<Msg> {
             FfiConverterOptionalString.allocationSize(value.`message`) +
             FfiConverterOptionalUByte.allocationSize(value.`type`) +
             FfiConverterOptionalString.allocationSize(value.`uuid`) +
+            FfiConverterOptionalString.allocationSize(value.`tag`) +
             FfiConverterOptionalString.allocationSize(value.`index`) +
             FfiConverterOptionalString.allocationSize(value.`sender`) +
             FfiConverterOptionalULong.allocationSize(value.`msat`) +
             FfiConverterOptionalULong.allocationSize(value.`timestamp`) +
-            FfiConverterOptionalString.allocationSize(value.`sentTo`)
+            FfiConverterOptionalString.allocationSize(value.`sentTo`) +
+            FfiConverterOptionalBoolean.allocationSize(value.`fromMe`)
     )
 
     override fun write(value: Msg, buf: ByteBuffer) {
             FfiConverterOptionalString.write(value.`message`, buf)
             FfiConverterOptionalUByte.write(value.`type`, buf)
             FfiConverterOptionalString.write(value.`uuid`, buf)
+            FfiConverterOptionalString.write(value.`tag`, buf)
             FfiConverterOptionalString.write(value.`index`, buf)
             FfiConverterOptionalString.write(value.`sender`, buf)
             FfiConverterOptionalULong.write(value.`msat`, buf)
             FfiConverterOptionalULong.write(value.`timestamp`, buf)
             FfiConverterOptionalString.write(value.`sentTo`, buf)
+            FfiConverterOptionalBoolean.write(value.`fromMe`, buf)
     }
 }
 
@@ -1063,6 +1092,8 @@ public object FfiConverterTypeMsg: FfiConverterRustBuffer<Msg> {
 
 data class RunReturn (
     var `msgs`: List<Msg>, 
+    var `msgsTotal`: ULong?, 
+    var `msgsCounts`: String?, 
     var `topics`: List<String>, 
     var `payloads`: List<ByteArray>, 
     var `stateMp`: ByteArray?, 
@@ -1083,7 +1114,9 @@ data class RunReturn (
     var `route`: String?, 
     var `node`: String?, 
     var `lastRead`: String?, 
-    var `muteLevels`: String?
+    var `muteLevels`: String?, 
+    var `payments`: String?, 
+    var `paymentsTotal`: ULong?
 ) {
     
 }
@@ -1092,6 +1125,8 @@ public object FfiConverterTypeRunReturn: FfiConverterRustBuffer<RunReturn> {
     override fun read(buf: ByteBuffer): RunReturn {
         return RunReturn(
             FfiConverterSequenceTypeMsg.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterSequenceString.read(buf),
             FfiConverterSequenceByteArray.read(buf),
             FfiConverterOptionalByteArray.read(buf),
@@ -1113,11 +1148,15 @@ public object FfiConverterTypeRunReturn: FfiConverterRustBuffer<RunReturn> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalULong.read(buf),
         )
     }
 
     override fun allocationSize(value: RunReturn) = (
             FfiConverterSequenceTypeMsg.allocationSize(value.`msgs`) +
+            FfiConverterOptionalULong.allocationSize(value.`msgsTotal`) +
+            FfiConverterOptionalString.allocationSize(value.`msgsCounts`) +
             FfiConverterSequenceString.allocationSize(value.`topics`) +
             FfiConverterSequenceByteArray.allocationSize(value.`payloads`) +
             FfiConverterOptionalByteArray.allocationSize(value.`stateMp`) +
@@ -1138,11 +1177,15 @@ public object FfiConverterTypeRunReturn: FfiConverterRustBuffer<RunReturn> {
             FfiConverterOptionalString.allocationSize(value.`route`) +
             FfiConverterOptionalString.allocationSize(value.`node`) +
             FfiConverterOptionalString.allocationSize(value.`lastRead`) +
-            FfiConverterOptionalString.allocationSize(value.`muteLevels`)
+            FfiConverterOptionalString.allocationSize(value.`muteLevels`) +
+            FfiConverterOptionalString.allocationSize(value.`payments`) +
+            FfiConverterOptionalULong.allocationSize(value.`paymentsTotal`)
     )
 
     override fun write(value: RunReturn, buf: ByteBuffer) {
             FfiConverterSequenceTypeMsg.write(value.`msgs`, buf)
+            FfiConverterOptionalULong.write(value.`msgsTotal`, buf)
+            FfiConverterOptionalString.write(value.`msgsCounts`, buf)
             FfiConverterSequenceString.write(value.`topics`, buf)
             FfiConverterSequenceByteArray.write(value.`payloads`, buf)
             FfiConverterOptionalByteArray.write(value.`stateMp`, buf)
@@ -1164,6 +1207,8 @@ public object FfiConverterTypeRunReturn: FfiConverterRustBuffer<RunReturn> {
             FfiConverterOptionalString.write(value.`node`, buf)
             FfiConverterOptionalString.write(value.`lastRead`, buf)
             FfiConverterOptionalString.write(value.`muteLevels`, buf)
+            FfiConverterOptionalString.write(value.`payments`, buf)
+            FfiConverterOptionalULong.write(value.`paymentsTotal`, buf)
     }
 }
 
@@ -2343,10 +2388,10 @@ fun `setBlockheight`(`blockheight`: UInt): RunReturn {
 
 @Throws(SphinxException::class)
 
-fun `addContact`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `toPubkey`: String, `routeHint`: String, `myAlias`: String, `myImg`: String, `amtMsat`: ULong, `inviteCode`: String?): RunReturn {
+fun `addContact`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `toPubkey`: String, `routeHint`: String, `myAlias`: String, `myImg`: String, `amtMsat`: ULong, `inviteCode`: String?, `theirAlias`: String?): RunReturn {
     return FfiConverterTypeRunReturn.lift(
     rustCallWithError(SphinxException) { _status ->
-    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_add_contact(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),FfiConverterString.lower(`toPubkey`),FfiConverterString.lower(`routeHint`),FfiConverterString.lower(`myAlias`),FfiConverterString.lower(`myImg`),FfiConverterULong.lower(`amtMsat`),FfiConverterOptionalString.lower(`inviteCode`),_status)
+    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_add_contact(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),FfiConverterString.lower(`toPubkey`),FfiConverterString.lower(`routeHint`),FfiConverterString.lower(`myAlias`),FfiConverterString.lower(`myImg`),FfiConverterULong.lower(`amtMsat`),FfiConverterOptionalString.lower(`inviteCode`),FfiConverterOptionalString.lower(`theirAlias`),_status)
 })
 }
 
@@ -2604,19 +2649,46 @@ fun `setPushToken`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `pu
 
 @Throws(SphinxException::class)
 
-fun `fetchMsgsBatch`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `lastMsgIdx`: ULong, `limit`: UInt?, `reverse`: Boolean?, `isRestore`: Boolean?): RunReturn {
+fun `getMsgsCounts`(`seed`: String, `uniqueTime`: String, `state`: ByteArray): RunReturn {
     return FfiConverterTypeRunReturn.lift(
     rustCallWithError(SphinxException) { _status ->
-    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_fetch_msgs_batch(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),FfiConverterULong.lower(`lastMsgIdx`),FfiConverterOptionalUInt.lower(`limit`),FfiConverterOptionalBoolean.lower(`reverse`),FfiConverterOptionalBoolean.lower(`isRestore`),_status)
+    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_get_msgs_counts(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),_status)
 })
 }
 
 @Throws(SphinxException::class)
 
-fun `fetchMsgsBatchOkkey`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `lastMsgIdx`: ULong, `limit`: UInt?, `reverse`: Boolean?, `isRestore`: Boolean?): RunReturn {
+fun `fetchMsgsBatch`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `lastMsgIdx`: ULong, `limit`: UInt?, `reverse`: Boolean?): RunReturn {
     return FfiConverterTypeRunReturn.lift(
     rustCallWithError(SphinxException) { _status ->
-    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_fetch_msgs_batch_okkey(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),FfiConverterULong.lower(`lastMsgIdx`),FfiConverterOptionalUInt.lower(`limit`),FfiConverterOptionalBoolean.lower(`reverse`),FfiConverterOptionalBoolean.lower(`isRestore`),_status)
+    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_fetch_msgs_batch(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),FfiConverterULong.lower(`lastMsgIdx`),FfiConverterOptionalUInt.lower(`limit`),FfiConverterOptionalBoolean.lower(`reverse`),_status)
+})
+}
+
+@Throws(SphinxException::class)
+
+fun `fetchMsgsBatchOkkey`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `lastMsgIdx`: ULong, `limit`: UInt?, `reverse`: Boolean?): RunReturn {
+    return FfiConverterTypeRunReturn.lift(
+    rustCallWithError(SphinxException) { _status ->
+    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_fetch_msgs_batch_okkey(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),FfiConverterULong.lower(`lastMsgIdx`),FfiConverterOptionalUInt.lower(`limit`),FfiConverterOptionalBoolean.lower(`reverse`),_status)
+})
+}
+
+@Throws(SphinxException::class)
+
+fun `fetchFirstMsgsPerKey`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `lastMsgIdx`: ULong, `limit`: UInt?, `reverse`: Boolean?): RunReturn {
+    return FfiConverterTypeRunReturn.lift(
+    rustCallWithError(SphinxException) { _status ->
+    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_fetch_first_msgs_per_key(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),FfiConverterULong.lower(`lastMsgIdx`),FfiConverterOptionalUInt.lower(`limit`),FfiConverterOptionalBoolean.lower(`reverse`),_status)
+})
+}
+
+@Throws(SphinxException::class)
+
+fun `fetchPayments`(`seed`: String, `uniqueTime`: String, `state`: ByteArray, `lastMsgIdx`: ULong?, `limit`: UInt?, `scid`: ULong?, `remoteOnly`: Boolean?, `minMsat`: ULong?): RunReturn {
+    return FfiConverterTypeRunReturn.lift(
+    rustCallWithError(SphinxException) { _status ->
+    _UniFFILib.INSTANCE.uniffi_sphinxrs_fn_func_fetch_payments(FfiConverterString.lower(`seed`),FfiConverterString.lower(`uniqueTime`),FfiConverterByteArray.lower(`state`),FfiConverterOptionalULong.lower(`lastMsgIdx`),FfiConverterOptionalUInt.lower(`limit`),FfiConverterOptionalULong.lower(`scid`),FfiConverterOptionalBoolean.lower(`remoteOnly`),FfiConverterOptionalULong.lower(`minMsat`),_status)
 })
 }
 

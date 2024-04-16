@@ -106,15 +106,17 @@ internal class TribeMembersListViewModel @Inject constructor(
 
     private suspend fun loadTribeMembers() {
         val chat = chatRepository.getChatById(ChatId(args.argChatId)).firstOrNull()
-        val tribeServerPubKey = "036b441c86acf790ff00694dfbf83e49cc8d537d166ec68b1077a719e61aa9bb42"
+        val tribeServerPubKey = connectManagerRepository.getTribeServerPubKey()
 
         val firstPage = (page == 0)
 
         chat?.uuid?.value?.let { tribePubKey ->
-            connectManagerRepository.getTribeMembers(
-                tribeServerPubKey,
-                tribePubKey
-            )
+            if (tribeServerPubKey != null) {
+                connectManagerRepository.getTribeMembers(
+                    tribeServerPubKey,
+                    tribePubKey
+                )
+            }
         }
 
 //        networkQueryContact.getTribeMembers(
@@ -300,7 +302,7 @@ internal class TribeMembersListViewModel @Inject constructor(
         }
     }
 
-    fun kickMemberFromTribe(memberPubKey: LightningNodePubKey) {
+    fun kickMemberFromTribe(memberPubKey: LightningNodePubKey, alias: SenderAlias?) {
         viewModelScope.launch(mainImmediate) {
 //            chatRepository.kickMemberFromTribe(ChatId(args.argChatId), contactPubKey)
             messageRepository.processMemberRequest(
@@ -308,7 +310,7 @@ internal class TribeMembersListViewModel @Inject constructor(
                 null,
                 memberPubKey,
                 MessageType.GroupAction.Kick,
-                null
+                alias
             )
         }
     }

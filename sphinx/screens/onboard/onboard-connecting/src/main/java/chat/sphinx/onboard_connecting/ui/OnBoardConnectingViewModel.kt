@@ -195,7 +195,7 @@ internal class OnBoardConnectingViewModel @Inject constructor(
                 if (signerManager.isPhoneSignerSettingUp()) {
                     continuePhoneSignerSetup()
                 } else {
-                    connectManagerRepository.createOwnerAccount("tcp://34.229.52.200:1883")
+                    connectManagerRepository.createOwnerAccount("34.229.52.200:1883")
 
 //                    submitSideEffect(OnBoardConnectingSideEffect.InvalidCode)
 //                    navigator.popBackStack()
@@ -682,7 +682,11 @@ internal class OnBoardConnectingViewModel @Inject constructor(
                         submitSideEffect(OnBoardConnectingSideEffect.ShowMnemonicToUser(connectionState.words) {})
                     }
                     is ConnectionManagerState.OwnerRegistered -> {
-                        navigator.toOnBoardNameScreen()
+                        if (connectionState.isRestoreAccount) {
+                            navigator.toDashboardScreen()
+                        } else {
+                            navigator.toOnBoardNameScreen()
+                        }
                     }
                     is ConnectionManagerState.UserState -> {
                         storeUserState(connectionState.userState)

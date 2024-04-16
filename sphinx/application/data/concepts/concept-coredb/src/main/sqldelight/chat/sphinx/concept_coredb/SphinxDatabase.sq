@@ -214,6 +214,11 @@ SELECT *
 FROM chatDbo
 WHERE uuid = ?;
 
+chatGetAllByUUIDS:
+SELECT *
+FROM chatDbo
+WHERE uuid IN :uuid;
+
 chatGetConversationForContact:
 SELECT *
 FROM chatDbo
@@ -337,6 +342,12 @@ SET price_per_message = :price_per_message,
     pin_message = :pin_message
 WHERE id = ?;
 
+chatUpdateSeenByLastMessage:
+UPDATE chatDbo
+SET seen = 1
+WHERE id = ?
+AND latest_message_id = ?;
+
 CREATE INDEX idx_chat_id ON chatDbo(id);
 CREATE INDEX idx_chat_type ON chatDbo(type);
 CREATE INDEX idx_chat_latest_message_id ON chatDbo(latest_message_id);
@@ -398,6 +409,11 @@ WHERE node_pub_key = ?
 ORDER BY id
 LIMIT 1;
 
+contactGetAllByPubKeys:
+SELECT *
+FROM contactDbo
+WHERE node_pub_key IN :node_pub_key;
+
 contactGetOwner:
 SELECT *
 FROM contactDbo
@@ -410,6 +426,12 @@ SELECT id
 FROM contactDbo
 ORDER BY id DESC
 LIMIT 1;
+
+contactCheckOwnerRouteHint:
+SELECT * FROM contactDbo
+WHERE owner = 1
+AND route_hint IS NOT NULL
+AND route_hint != '';
 
 contactUpsert {
     UPDATE contactDbo
@@ -487,7 +509,7 @@ UPDATE contactDbo
 SET alias = :alias,
     photo_url = :photo_url,
     status = :status
-WHERE id = ?;
+WHERE id = ? AND id != 0;
 
 contactUpdateInvitee:
 UPDATE contactDbo
@@ -505,6 +527,12 @@ WHERE id = ?;
 contactDeleteById:
 DELETE FROM contactDbo
 WHERE id = ?;
+
+contactUpdateOwnerInfo:
+UPDATE contactDbo
+SET alias = :alias,
+    photo_url = : photo_url
+WHERE owner = 1;
 
 CREATE TABLE inviteDbo(
     id                          INTEGER         AS InviteId NOT NULL PRIMARY KEY,
@@ -787,10 +815,28 @@ LIMIT 1;
 messageGetMaxId:
 SELECT MAX(id) FROM messageDbo;
 
+messageGetMaxIdByChatId:
+SELECT *
+FROM messageDbo
+WHERE id = (
+    SELECT MAX(id)
+    FROM messageDbo
+    WHERE chat_id = ?
+);
+
 messageGetIdByUUID:
 SELECT id
 FROM messageDbo
 WHERE uuid = ?;
+
+messageGetOwnerInfo:
+SELECT *
+FROM messageDbo
+WHERE id = (
+    SELECT MAX(id)
+    FROM messageDbo
+    WHERE chat_id < 9999 AND sender = 0
+);
 
 messageGetAllToShowByChatIdWithLimit:
 SELECT *
@@ -927,6 +973,12 @@ messageUpdateUUIDByUUID:
 UPDATE messageDbo
 SET uuid = :newUuid
 WHERE uuid = ?;
+
+messageUpdateSeenByChatIdAndId:
+UPDATE messageDbo
+SET seen = 1
+WHERE chat_id = ?
+AND id <= ?;
 
 messageUpsert {
     UPDATE messageDbo

@@ -65,12 +65,13 @@ abstract class ContactViewModel<ARGS: NavArgs>(
                 ScannerRequest(
                     filter = object : ScannerFilter() {
                         override suspend fun checkData(data: String): Response<Any, String> {
-                            val scannedString = data.split(":")
+                            val scannedString = data.split("_")
+                            val contactRouteHint = "${scannedString.getOrNull(1)}_${scannedString.getOrNull(2)}".toLightningRouteHint()
 
                             if (scannedString.getOrNull(0)?.toLightningNodePubKey() != null) {
                                 return Response.Success(Any())
                             }
-                            if (scannedString.getOrNull(1)?.toLightningRouteHint() != null) {
+                            if (contactRouteHint != null) {
                                 return Response.Success(Any())
                             }
                             return Response.Error("QR code is not a Lightning Node Public Key")
@@ -79,9 +80,9 @@ abstract class ContactViewModel<ARGS: NavArgs>(
                 )
             )
             if (response is Response.Success) {
-                val contactInfo = response.value.value.split(":")
+                val contactInfo = response.value.value.split("_")
                 val contactOkKey = contactInfo.getOrNull(0)?.toLightningNodePubKey()
-                val contactRouteHint = contactInfo.getOrNull(1)?.toLightningRouteHint()
+                val contactRouteHint = "${contactInfo.getOrNull(1)}_${contactInfo.getOrNull(2)}".toLightningRouteHint()
 
                 if (contactOkKey != null && contactRouteHint != null) {
                     submitSideEffect(

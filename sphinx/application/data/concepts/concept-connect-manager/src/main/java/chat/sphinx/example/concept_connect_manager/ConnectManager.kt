@@ -11,6 +11,7 @@ abstract class ConnectManager {
 
     abstract fun createAccount(lspIp: String)
     abstract fun setInviteCode(inviteString: String)
+    abstract fun setMnemonicWords(words: List<String>?)
     abstract fun createContact(contact: NewContact)
     abstract fun initializeMqttAndSubscribe(
         serverUri: String,
@@ -36,11 +37,11 @@ abstract class ConnectManager {
         tribeHost: String,
         tribePubKey: String,
         tribeRouteHint: String,
-        isPrivate: Boolean
+        isPrivate: Boolean,
+        userAlias: String
     )
 
     abstract fun createTribe(
-        tribeServerPubKey: String,
         tribeJson: String
     )
 
@@ -55,6 +56,8 @@ abstract class ConnectManager {
         amount: Long,
         memo: String
     ): Pair<String, String>? // invoice, paymentHash
+
+    abstract fun getTribeServerPubKey(): String?
 
     abstract fun processInvoicePayment(paymentRequest: String)
 
@@ -73,52 +76,56 @@ abstract class ConnectManager {
         amount: Long?
     ): String?
 
+    abstract fun readMessage(
+        contactPubKey: String,
+        messageIndex: Long
+    )
+
+    abstract fun getReadMessages()
     abstract fun retrieveLspIp(): String?
     abstract fun addListener(listener: ConnectManagerListener): Boolean
     abstract fun removeListener(listener: ConnectManagerListener): Boolean
     abstract fun processChallengeSignature(challenge: String)
+    abstract fun fetchMessagesOnRestoreAccount(totalHighestIndex: Long?)
+    abstract fun fetchFirstMessagesPerKey()
+    abstract fun getAllMessagesCount()
+    abstract fun reconnectWithBackoff()
 }
 
 interface ConnectManagerListener {
 
     fun onMnemonicWords(words: String)
-    fun onOwnerRegistered(okKey: String, routeHint: String)
-    fun onMessageReceived(
+    fun onOwnerRegistered(okKey: String, routeHint: String, isRestoreAccount: Boolean)
+
+    fun onMessage(
         msg: String,
         msgSender: String,
         msgType: Int,
         msgUuid: String,
         msgIndex: String,
-        amount: Long?,
-        msgTimestamp: Long?
-    )
-
-    fun onMessageSent(
-        msg: String,
-        contactPubKey: String,
-        msgType: Int,
-        msgUUID: String,
-        msgIndex: String,
         msgTimestamp: Long?,
+        sentTo: String,
+        amount: Long?,
+        fromMe: Boolean?
     )
 
-    fun onNewTribe(newTribe: String)
+    fun onRestoreContacts(contacts: List<String?>)
+    fun onRestoreTribes(tribes: List<Pair<String?, Boolean?>>) // Sender, FromMe
+    fun onRestoreNextPageMessages(highestIndex: Long, limit: Int)
 
+    fun onNewTribeCreated(newTribe: String)
     fun onTribeMembersList(tribeMembers: String)
-
     fun onMessageUUID(msgUUID: String, provisionalId: Long)
-
     fun onUpdateUserState(userState: String)
-
     fun onDeleteUserState(userState: List<String>)
-
     fun onSignedChallenge(sign: String)
-
     fun onNewBalance(balance: Long)
-
     fun onNetworkStatusChange(isConnected: Boolean)
-
+    fun listenToOwnerCreation(callback: () -> Unit)
     fun onNewInviteCreated(inviteString: String)
+    fun onLastReadMessages(lastReadMessages: String)
+    fun onMessagesCounts(msgsCounts: String)
+    fun onInitialTribe(tribe: String)
 
 }
 

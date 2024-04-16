@@ -203,12 +203,16 @@ abstract class ContactFragment<
 
     @SuppressLint("SetTextI18n")
     private fun pastePubKey(s: Editable?) {
-        val contactInfo = s?.split(":")
-        contactInfo?.getOrNull(0)?.toLightningNodePubKey()?.let { nnPubKey ->
-            contactBinding.editTextContactAddress.setText(nnPubKey.value)
-        }
-        contactInfo?.getOrNull(1)?.toLightningRouteHint()?.let { nnVirtualAddress ->
-            contactBinding.editTextContactRouteHint.setText(nnVirtualAddress.value)
+        s?.split("_")?.let { contact ->
+            if (contact.size == 3) {  // Check if there are exactly three elements
+                contact.getOrNull(0)?.toLightningNodePubKey()?.let { nnPubKey ->
+                    contactBinding.editTextContactAddress.setText(nnPubKey.value)
+                }
+                "${contact.getOrNull(1)}_${contact.getOrNull(2)}".toLightningRouteHint()
+                    ?.let { nnVirtualAddress ->
+                        contactBinding.editTextContactRouteHint.setText(nnVirtualAddress.value)
+                    }
+            }
         }
     }
 

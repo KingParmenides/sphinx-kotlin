@@ -344,9 +344,9 @@ internal class DashboardViewModel @Inject constructor(
                     handlePeopleConnectLink(peopleConnectLink)
 
                 } ?: run {
-                    val contactInfo = code.split(":")
+                    val contactInfo = code.split("_")
                     val pubKey = contactInfo.getOrNull(0)?.toLightningNodePubKey()
-                    val contactRouteHint = contactInfo.getOrNull(1)?.toLightningRouteHint()
+                    val contactRouteHint = "${contactInfo.getOrNull(1)}_${contactInfo.getOrNull(2)}".toLightningRouteHint()
 
                     if (pubKey != null && contactRouteHint != null) {
                         handleContactLink(pubKey, contactRouteHint)

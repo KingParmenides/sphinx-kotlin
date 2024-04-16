@@ -120,12 +120,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideConnectManagerImpl(
-        dispatchers: CoroutineDispatchers,
-        ): ConnectManagerImpl =
-        ConnectManagerImpl(
-            dispatchers
-        )
+    fun provideConnectManagerImpl(): ConnectManagerImpl =
+        ConnectManagerImpl()
 
     @Provides
     @Singleton
