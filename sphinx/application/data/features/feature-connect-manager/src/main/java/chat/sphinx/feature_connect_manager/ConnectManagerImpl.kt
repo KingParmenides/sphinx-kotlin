@@ -67,6 +67,7 @@ class ConnectManagerImpl: ConnectManager()
     private val network = "regtest"
     private var ownerSeed: String? = null
     private var inviteCode: String? = null
+    private var inviteInitialTribe: String? = null
     private var restoreMnemonicWords: List<String>? = emptyList()
     private var inviterContact: NewContact? = null
     private var hasAttemptedReconnect = false
@@ -202,6 +203,13 @@ class ConnectManagerImpl: ConnectManager()
                 createContact(inviterContact!!)
                 inviterContact = null
             }
+
+            if (inviteInitialTribe != null) {
+                notifyListeners {
+                    onInitialTribe(inviteInitialTribe!!)
+                }
+            }
+
             // return always that the mqtt is connected
             return
         }
@@ -552,7 +560,7 @@ class ConnectManagerImpl: ConnectManager()
                 _mixerIp!!,
                 convertSatsToMillisats(sats),
                 ownerInfoStateFlow.value?.alias ?: "",
-                null,
+                "34.229.52.200:8801",
                 tribeServerPubKey
             )
 
@@ -989,6 +997,7 @@ class ConnectManagerImpl: ConnectManager()
 
         rr.initialTribe?.let { initialTribe ->
             // Call joinTribe with the url that comes on initialTribe
+            inviteInitialTribe = initialTribe
             Log.d("MQTT_MESSAGES", "=> initialTribe $initialTribe")
         }
 

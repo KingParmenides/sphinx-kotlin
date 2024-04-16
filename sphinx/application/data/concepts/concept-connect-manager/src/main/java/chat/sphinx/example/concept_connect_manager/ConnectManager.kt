@@ -125,6 +125,7 @@ interface ConnectManagerListener {
     fun onNewInviteCreated(inviteString: String)
     fun onLastReadMessages(lastReadMessages: String)
     fun onMessagesCounts(msgsCounts: String)
+    fun onInitialTribe(tribe: String)
 
 }
 

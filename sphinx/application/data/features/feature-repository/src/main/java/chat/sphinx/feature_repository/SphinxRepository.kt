@@ -950,6 +950,92 @@ abstract class SphinxRepository(
         }
     }
 
+    fun extractUrlParts(url: String): Pair<String, String> {
+        // Regex to remove any protocol
+        val cleanUrl = url.replace(Regex("^[a-zA-Z]+://"), "")
+
+        // Find the first '/' which separates host and path
+        val separatorIndex = cleanUrl.indexOf("/")
+
+        // Extract the host and tribePubKey
+        val host = cleanUrl.substring(0, separatorIndex)
+        val tribePubKey = cleanUrl.substring(separatorIndex + 1).split("/").last()
+
+        return host to tribePubKey
+    }
+
+    override fun onInitialTribe(tribe: String) {
+        applicationScope.launch(io) {
+            val (host, tribePubKey) = extractUrlParts(tribe)
+            networkQueryChat.getTribeInfo(ChatHost(host), LightningNodePubKey(tribePubKey))
+                .collect { loadResponse ->
+                    when (loadResponse) {
+                        is LoadResponse.Loading -> {}
+                        is Response.Error -> {}
+                        is Response.Success -> {
+                            val queries = coreDB.getSphinxDatabaseQueries()
+
+                            connectManager.joinToTribe(
+                                host,
+                                tribePubKey,
+                                loadResponse.value.route_hint,
+                                loadResponse.value.private ?: false,
+                                accountOwner.value?.alias?.value ?: "unknown"
+                            )
+
+                            // TribeId is set from LONG.MAX_VALUE and decremented by 1 for each new tribe
+                            val tribeId = queries.chatGetLastTribeId().executeAsOneOrNull()
+                                ?.let { it.MIN?.minus(1) }
+                                ?: (Long.MAX_VALUE)
+
+                            val now: String = DateTime.nowUTC()
+
+                            val newTribe = Chat(
+                                id = ChatId(tribeId),
+                                uuid = ChatUUID(tribePubKey),
+                                name = ChatName(loadResponse.value.name ?: "unknown"),
+                                photoUrl = loadResponse.value.img?.toPhotoUrl(),
+                                type = ChatType.Tribe,
+                                status = ChatStatus.Approved,
+                                contactIds = listOf(ContactId(0), ContactId(tribeId)),
+                                isMuted = ChatMuted.False,
+                                createdAt = now.toDateTime(),
+                                groupKey = null,
+                                host = ChatHost(host),
+                                pricePerMessage = loadResponse.value.price_per_message.toSat(),
+                                escrowAmount = loadResponse.value.escrow_amount.toSat(),
+                                unlisted = ChatUnlisted.False,
+                                privateTribe = ChatPrivate.False,
+                                ownerPubKey = LightningNodePubKey(tribePubKey),
+                                seen = Seen.False,
+                                metaData = null,
+                                myPhotoUrl = null,
+                                myAlias = null,
+                                pendingContactIds = emptyList(),
+                                latestMessageId = null,
+                                contentSeenAt = null,
+                                pinedMessage = null,
+                                notify = NotificationLevel.SeeAll
+                            )
+
+                            chatLock.withLock {
+                                queries.transaction {
+                                    upsertNewChat(
+                                        newTribe,
+                                        moshi,
+                                        SynchronizedMap<ChatId, Seen>(),
+                                        queries,
+                                        null,
+                                        accountOwner.value?.nodePubKey
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
     override fun startRestoreProcess() {
         applicationScope.launch(mainImmediate) {
             var msgCounts: MsgsCounts? = null
