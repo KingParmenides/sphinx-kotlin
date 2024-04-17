@@ -19,6 +19,7 @@ interface ConnectManagerRepository {
     fun createInvite(nickname: String, welcomeMessage: String, sats: Long, tribeServerPubKey: String?)
     fun setInviteCode(inviteString: String)
     fun setMnemonicWords(words: List<String>?)
+    fun setOwnerDeviceId(deviceId: String)
 
     fun joinTribe(
         tribeHost: String,
@@ -27,7 +28,10 @@ interface ConnectManagerRepository {
         tribeName: String,
         tribePicture: String?,
         isPrivate: Boolean,
-        userAlias: String
+        userAlias: String,
+        pricePerMessage: Long,
+        escrowAmount: Long,
+        priceToJoin: Long,
     )
 
     fun getTribeMembers(

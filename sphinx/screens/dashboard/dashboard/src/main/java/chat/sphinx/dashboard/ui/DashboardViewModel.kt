@@ -158,6 +158,7 @@ internal class DashboardViewModel @Inject constructor(
             }
         }
         connectManagerRepository.connectAndSubscribeToMqtt(getUserState())
+        setDeviceId()
         collectConnectionStateStateFlow()
 
         syncFeedRecommendationsState()
@@ -172,6 +173,23 @@ internal class DashboardViewModel @Inject constructor(
         networkRefresh(true)
     }
 
+    private fun setDeviceId() {
+        viewModelScope.launch(mainImmediate) {
+            val register = pushNotificationRegistrar.register()
+
+            when (register) {
+                is Response.Error -> {}
+                is Response.Success -> {
+                    networkStatusStateFlow.collect { networkStatus ->
+                        if (networkStatus is NetworkStatus.Connected) {
+                            connectManagerRepository.setOwnerDeviceId(register.value.toString())
+                            return@collect
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private fun collectConnectionStateStateFlow() {
         viewModelScope.launch(mainImmediate) {

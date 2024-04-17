@@ -534,6 +534,11 @@ SET alias = :alias,
     photo_url = : photo_url
 WHERE owner = 1;
 
+contactUpdateOwnerDeviceId:
+UPDATE contactDbo
+SET device_id = :device_id
+WHERE owner = 1;
+
 CREATE TABLE inviteDbo(
     id                          INTEGER         AS InviteId NOT NULL PRIMARY KEY,
     invite_string               TEXT            AS InviteString NOT NULL,

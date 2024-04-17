@@ -1,6 +1,5 @@
 package chat.sphinx.feature_service_notification_firebase
 
-import android.app.Application
 import android.content.Context
 import app.cash.exhaustive.Exhaustive
 import chat.sphinx.concept_repository_contact.ContactRepository
@@ -77,6 +76,7 @@ internal class FirebasePushNotificationRegistrar(
                 }
                 is Response.Success -> {
                     contactRepository.updateOwnerDeviceId(DeviceId(response.value))
+                    Response.Success(response.value)
                 }
             }
         } ?: Response.Error(ResponseError("NotificationToken retrieved was null"))

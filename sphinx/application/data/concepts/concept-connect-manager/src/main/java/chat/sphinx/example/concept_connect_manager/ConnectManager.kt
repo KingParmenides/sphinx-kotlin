@@ -38,7 +38,8 @@ abstract class ConnectManager {
         tribePubKey: String,
         tribeRouteHint: String,
         isPrivate: Boolean,
-        userAlias: String
+        userAlias: String,
+        priceToJoin: Long
     )
 
     abstract fun createTribe(
@@ -90,6 +91,7 @@ abstract class ConnectManager {
     abstract fun fetchFirstMessagesPerKey()
     abstract fun getAllMessagesCount()
     abstract fun reconnectWithBackoff()
+    abstract fun setOwnerDeviceId(deviceId: String)
 }
 
 interface ConnectManagerListener {

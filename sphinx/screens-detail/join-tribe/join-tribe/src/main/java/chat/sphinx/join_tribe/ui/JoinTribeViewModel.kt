@@ -201,6 +201,9 @@ internal class JoinTribeViewModel @Inject constructor(
                     tribeInfo.img,
                     tribeInfo.private ?: false,
                     alias,
+                    tribeInfo.price_per_message,
+                    tribeInfo.escrow_amount,
+                    tribeInfo.price_to_join,
 
                 )
                 updateViewState(JoinTribeViewState.TribeJoined)

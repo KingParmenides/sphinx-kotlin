@@ -345,9 +345,19 @@ abstract class SphinxRepository(
         tribeName: String,
         tribePicture: String?,
         isPrivate: Boolean,
-        userAlias: String
+        userAlias: String,
+        pricePerMessage: Long,
+        escrowAmount: Long,
+        priceToJoin: Long
     ) {
-        connectManager.joinToTribe(tribeHost, tribePubKey, tribeRouteHint, isPrivate, userAlias)
+        connectManager.joinToTribe(
+            tribeHost,
+            tribePubKey,
+            tribeRouteHint,
+            isPrivate,
+            userAlias,
+            priceToJoin
+        )
 
         applicationScope.launch(io) {
             val queries = coreDB.getSphinxDatabaseQueries()
@@ -369,8 +379,8 @@ abstract class SphinxRepository(
                 createdAt = now.toDateTime(),
                 groupKey = null,
                 host = ChatHost(tribeHost),
-                pricePerMessage = null,
-                escrowAmount = null,
+                pricePerMessage = pricePerMessage.toSat(),
+                escrowAmount = escrowAmount.toSat(),
                 unlisted = ChatUnlisted.False,
                 privateTribe = ChatPrivate.False,
                 ownerPubKey = LightningNodePubKey(tribePubKey),
@@ -436,6 +446,10 @@ abstract class SphinxRepository(
         connectManager.setMnemonicWords(words)
     }
 
+    override fun setOwnerDeviceId(deviceId: String) {
+        connectManager.setOwnerDeviceId(deviceId)
+    }
+
     override fun getTribeMembers(tribeServerPubKey: String, tribePubKey: String) {
         connectManager.retrieveTribeMembersList(tribeServerPubKey, tribePubKey)
     }
@@ -473,7 +487,7 @@ abstract class SphinxRepository(
                     pubKey,
                     provisionalId.value,
                     messageType,
-                    1L,
+                    null,
                     true
                 )
             }
@@ -980,7 +994,8 @@ abstract class SphinxRepository(
                                 tribePubKey,
                                 loadResponse.value.route_hint,
                                 loadResponse.value.private ?: false,
-                                accountOwner.value?.alias?.value ?: "unknown"
+                                accountOwner.value?.alias?.value ?: "unknown",
+                                loadResponse.value.price_to_join ?: 0
                             )
 
                             // TribeId is set from LONG.MAX_VALUE and decremented by 1 for each new tribe
@@ -2558,53 +2573,22 @@ abstract class SphinxRepository(
         }
     }
 
-    override suspend fun updateOwnerDeviceId(deviceId: DeviceId): Response<Any, ResponseError> {
+    override suspend fun updateOwnerDeviceId(deviceId: DeviceId) {
         val queries = coreDB.getSphinxDatabaseQueries()
-        var response: Response<Any, ResponseError> = Response.Success(Any())
 
         try {
             accountOwner.collect { owner ->
-
                 if (owner != null) {
-
                     if (owner.deviceId != deviceId) {
-
-                        networkQueryContact.updateContact(
-                            owner.id,
-                            PutContactDto(device_id = deviceId.value)
-                        ).collect { loadResponse ->
-                            @Exhaustive
-                            when (loadResponse) {
-                                is LoadResponse.Loading -> {
-                                }
-                                is Response.Error -> {
-                                    response = loadResponse
-                                    throw Exception()
-                                }
-                                is Response.Success -> {
-                                    contactLock.withLock {
-                                        queries.transaction {
-                                            upsertContact(loadResponse.value, queries)
-                                        }
-                                    }
-                                    LOG.d(TAG, "DeviceId has been successfully updated")
-
-                                    throw Exception()
-                                }
-                            }
-                        }
+                        queries.contactUpdateOwnerDeviceId(deviceId)
                     } else {
                         LOG.d(TAG, "DeviceId is up to date")
                         throw Exception()
                     }
-
                 }
-
             }
-        } catch (e: Exception) {
-        }
+        } catch (e: Exception) { }
 
-        return response
     }
 
     @OptIn(RawPasswordAccess::class)
@@ -3972,7 +3956,7 @@ abstract class SphinxRepository(
             val pricePerMessage = chat?.pricePerMessage?.value ?: 0
             val escrowAmount = chat?.escrowAmount?.value ?: 0
             val priceToMeet = sendMessage.priceToMeet?.value ?: 0
-            val messagePrice = (pricePerMessage + escrowAmount + priceToMeet).toSat() ?: Sat(0)
+            val messagePrice = (pricePerMessage + escrowAmount).toSat() ?: Sat(0)
 
             val messageType = when {
                 (media != null) -> {
