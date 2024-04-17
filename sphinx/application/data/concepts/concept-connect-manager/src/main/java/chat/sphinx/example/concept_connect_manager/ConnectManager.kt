@@ -91,6 +91,7 @@ abstract class ConnectManager {
     abstract fun fetchFirstMessagesPerKey()
     abstract fun getAllMessagesCount()
     abstract fun reconnectWithBackoff()
+    abstract fun setOwnerDeviceId(deviceId: String)
 }
 
 interface ConnectManagerListener {

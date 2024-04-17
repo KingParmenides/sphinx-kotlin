@@ -39,7 +39,7 @@ interface ContactRepository {
     var updatedContactIds: MutableList<ContactId>
 
     suspend fun deleteContactById(contactId: ContactId): Response<Any, ResponseError>
-    suspend fun updateOwnerDeviceId(deviceId: DeviceId): Response<Any, ResponseError>
+    suspend fun updateOwnerDeviceId(deviceId: DeviceId)
     suspend fun updateOwnerNameAndKey(name: String, contactKey: Password): Response<Any, ResponseError>
     suspend fun updateOwner(alias: String?, privatePhoto: PrivatePhoto?, tipAmount: Sat?): Response<Any, ResponseError>
 

@@ -446,6 +446,10 @@ abstract class SphinxRepository(
         connectManager.setMnemonicWords(words)
     }
 
+    override fun setOwnerDeviceId(deviceId: String) {
+        connectManager.setOwnerDeviceId(deviceId)
+    }
+
     override fun getTribeMembers(tribeServerPubKey: String, tribePubKey: String) {
         connectManager.retrieveTribeMembersList(tribeServerPubKey, tribePubKey)
     }
@@ -2569,53 +2573,22 @@ abstract class SphinxRepository(
         }
     }
 
-    override suspend fun updateOwnerDeviceId(deviceId: DeviceId): Response<Any, ResponseError> {
+    override suspend fun updateOwnerDeviceId(deviceId: DeviceId) {
         val queries = coreDB.getSphinxDatabaseQueries()
-        var response: Response<Any, ResponseError> = Response.Success(Any())
 
         try {
             accountOwner.collect { owner ->
-
                 if (owner != null) {
-
                     if (owner.deviceId != deviceId) {
-
-                        networkQueryContact.updateContact(
-                            owner.id,
-                            PutContactDto(device_id = deviceId.value)
-                        ).collect { loadResponse ->
-                            @Exhaustive
-                            when (loadResponse) {
-                                is LoadResponse.Loading -> {
-                                }
-                                is Response.Error -> {
-                                    response = loadResponse
-                                    throw Exception()
-                                }
-                                is Response.Success -> {
-                                    contactLock.withLock {
-                                        queries.transaction {
-                                            upsertContact(loadResponse.value, queries)
-                                        }
-                                    }
-                                    LOG.d(TAG, "DeviceId has been successfully updated")
-
-                                    throw Exception()
-                                }
-                            }
-                        }
+                        queries.contactUpdateOwnerDeviceId(deviceId)
                     } else {
                         LOG.d(TAG, "DeviceId is up to date")
                         throw Exception()
                     }
-
                 }
-
             }
-        } catch (e: Exception) {
-        }
+        } catch (e: Exception) { }
 
-        return response
     }
 
     @OptIn(RawPasswordAccess::class)

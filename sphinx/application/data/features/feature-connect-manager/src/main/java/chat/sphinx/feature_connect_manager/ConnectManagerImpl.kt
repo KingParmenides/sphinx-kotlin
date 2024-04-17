@@ -54,6 +54,7 @@ import uniffi.sphinxrs.rootSignMs
 import uniffi.sphinxrs.send
 import uniffi.sphinxrs.setBlockheight
 import uniffi.sphinxrs.setNetwork
+import uniffi.sphinxrs.setPushToken
 import uniffi.sphinxrs.signBytes
 import uniffi.sphinxrs.xpubFromSeed
 import java.security.SecureRandom
@@ -730,6 +731,19 @@ class ConnectManagerImpl: ConnectManager()
         }
     }
 
+    override fun setOwnerDeviceId(deviceId: String) {
+        try {
+            val token = setPushToken(
+                ownerSeed!!,
+                getTimestampInMilliseconds(),
+                getCurrentUserState(),
+                deviceId
+            )
+            handleRunReturn(token, mqttClient!!)
+        } catch (e: Exception) {
+            Log.e("MQTT_MESSAGES", "setOwnerDeviceId ${e.message}")
+        }
+    }
 
     override fun generateMediaToken(
         contactPubKey: String,
