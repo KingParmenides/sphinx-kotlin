@@ -345,9 +345,19 @@ abstract class SphinxRepository(
         tribeName: String,
         tribePicture: String?,
         isPrivate: Boolean,
-        userAlias: String
+        userAlias: String,
+        pricePerMessage: Long,
+        escrowAmount: Long,
+        priceToJoin: Long
     ) {
-        connectManager.joinToTribe(tribeHost, tribePubKey, tribeRouteHint, isPrivate, userAlias)
+        connectManager.joinToTribe(
+            tribeHost,
+            tribePubKey,
+            tribeRouteHint,
+            isPrivate,
+            userAlias,
+            priceToJoin
+        )
 
         applicationScope.launch(io) {
             val queries = coreDB.getSphinxDatabaseQueries()
@@ -369,8 +379,8 @@ abstract class SphinxRepository(
                 createdAt = now.toDateTime(),
                 groupKey = null,
                 host = ChatHost(tribeHost),
-                pricePerMessage = null,
-                escrowAmount = null,
+                pricePerMessage = pricePerMessage.toSat(),
+                escrowAmount = escrowAmount.toSat(),
                 unlisted = ChatUnlisted.False,
                 privateTribe = ChatPrivate.False,
                 ownerPubKey = LightningNodePubKey(tribePubKey),
@@ -473,7 +483,7 @@ abstract class SphinxRepository(
                     pubKey,
                     provisionalId.value,
                     messageType,
-                    1L,
+                    null,
                     true
                 )
             }
@@ -980,7 +990,8 @@ abstract class SphinxRepository(
                                 tribePubKey,
                                 loadResponse.value.route_hint,
                                 loadResponse.value.private ?: false,
-                                accountOwner.value?.alias?.value ?: "unknown"
+                                accountOwner.value?.alias?.value ?: "unknown",
+                                loadResponse.value.price_to_join ?: 0
                             )
 
                             // TribeId is set from LONG.MAX_VALUE and decremented by 1 for each new tribe
@@ -3972,7 +3983,7 @@ abstract class SphinxRepository(
             val pricePerMessage = chat?.pricePerMessage?.value ?: 0
             val escrowAmount = chat?.escrowAmount?.value ?: 0
             val priceToMeet = sendMessage.priceToMeet?.value ?: 0
-            val messagePrice = (pricePerMessage + escrowAmount + priceToMeet).toSat() ?: Sat(0)
+            val messagePrice = (pricePerMessage + escrowAmount).toSat() ?: Sat(0)
 
             val messageType = when {
                 (media != null) -> {

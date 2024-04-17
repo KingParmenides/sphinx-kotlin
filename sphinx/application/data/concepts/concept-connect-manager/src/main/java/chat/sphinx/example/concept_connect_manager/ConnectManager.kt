@@ -38,7 +38,8 @@ abstract class ConnectManager {
         tribePubKey: String,
         tribeRouteHint: String,
         isPrivate: Boolean,
-        userAlias: String
+        userAlias: String,
+        priceToJoin: Long
     )
 
     abstract fun createTribe(

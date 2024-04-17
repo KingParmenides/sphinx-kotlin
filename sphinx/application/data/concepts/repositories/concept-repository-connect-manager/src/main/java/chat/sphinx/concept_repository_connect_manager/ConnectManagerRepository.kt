@@ -27,7 +27,10 @@ interface ConnectManagerRepository {
         tribeName: String,
         tribePicture: String?,
         isPrivate: Boolean,
-        userAlias: String
+        userAlias: String,
+        pricePerMessage: Long,
+        escrowAmount: Long,
+        priceToJoin: Long,
     )
 
     fun getTribeMembers(

@@ -497,9 +497,11 @@ class ConnectManagerImpl: ConnectManager()
         tribePubKey: String,
         tribeRouteHint: String,
         isPrivate: Boolean,
-        userAlias: String
+        userAlias: String,
+        priceToJoin: Long
     ) {
         val now = getTimestampInMilliseconds()
+        val amount = if (priceToJoin == 0L) 1L else priceToJoin
 
         try {
             val joinTribeMessage = joinTribe(
@@ -509,7 +511,7 @@ class ConnectManagerImpl: ConnectManager()
                 tribePubKey,
                 tribeRouteHint,
                 userAlias,
-                1000.toULong(),
+                convertSatsToMillisats(amount),
                 isPrivate
             )
             handleRunReturn(joinTribeMessage, mqttClient!!)
@@ -549,8 +551,6 @@ class ConnectManagerImpl: ConnectManager()
         tribeServerPubKey: String?
     ): Pair<String, String>? {
         val now = getTimestampInMilliseconds()
-
-        // Needs to implement tribeServerPubKey and tribeHost in the future
 
         try {
             val createInvite = makeInvite(
