@@ -81,8 +81,12 @@ class ConnectManagerImpl: ConnectManager()
         get() = _ownerInfoStateFlow.asStateFlow()
 
     private var mixerIp: String?
-        get() = _mixerIp?.let { "tcp://$it" }
-        set(value) { _mixerIp = value }
+        get() = _mixerIp?.let {
+            if (!it.startsWith("tcp://")) "tcp://$it" else it
+        }
+        set(value) {
+            _mixerIp = value?.replace("tcp://", "")
+        }
 
     // Key Generation and Management
     override fun createAccount(lspIp: String) {
@@ -180,7 +184,7 @@ class ConnectManagerImpl: ConnectManager()
 
             handleRunReturn(
                 runReturn,
-                mqttClient!!
+                mqttClient
             )
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "add contact excp $e")
@@ -277,7 +281,7 @@ class ConnectManagerImpl: ConnectManager()
                     hasAttemptedReconnect = false
 
                     if (invite != null) {
-                        handleRunReturn(invite, mqttClient!!)
+                        handleRunReturn(invite, mqttClient)
                     } else {
                         subscribeOwnerMQTT()
                     }
@@ -410,7 +414,7 @@ class ConnectManagerImpl: ConnectManager()
                         ownerInfoStateFlow.value?.messageLastIndex?.plus(1)?.toULong() ?: 0.toULong(),
                         100.toUInt()
                     )
-                    handleRunReturn(fetchMessages, mqttClient!!)
+                    handleRunReturn(fetchMessages, mqttClient)
 
                     getReadMessages()
                     Log.d("SELLAMO", "fetchMessages")
@@ -450,7 +454,7 @@ class ConnectManagerImpl: ConnectManager()
                 convertSatsToMillisats(nnAmount),
                 isTribe
             )
-            handleRunReturn(message, mqttClient!!)
+            handleRunReturn(message, mqttClient)
 
             message.msgs.firstOrNull()?.uuid?.let { msgUUID ->
                 notifyListeners {
@@ -486,7 +490,7 @@ class ConnectManagerImpl: ConnectManager()
                 convertSatsToMillisats(nnAmount),
                 isTribe
             )
-            handleRunReturn(message, mqttClient!!)
+            handleRunReturn(message, mqttClient)
 
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "send ${e.message}")
@@ -515,7 +519,7 @@ class ConnectManagerImpl: ConnectManager()
                 convertSatsToMillisats(amount),
                 isPrivate
             )
-            handleRunReturn(joinTribeMessage, mqttClient!!)
+            handleRunReturn(joinTribeMessage, mqttClient)
 
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "joinTribe ${e.message}")
@@ -537,7 +541,7 @@ class ConnectManagerImpl: ConnectManager()
                 )
             }
             if (createTribe != null) {
-                handleRunReturn(createTribe, mqttClient!!)
+                handleRunReturn(createTribe, mqttClient)
             }
         }
         catch (e: Exception) {
@@ -566,7 +570,7 @@ class ConnectManagerImpl: ConnectManager()
             )
 
             if (createInvite.newInvite != null) {
-                handleRunReturn(createInvite, mqttClient!!)
+                handleRunReturn(createInvite, mqttClient)
 
                 val invite = createInvite.newInvite ?: return null
                 val code = codeFromInvite(invite)
@@ -591,7 +595,7 @@ class ConnectManagerImpl: ConnectManager()
                 convertSatsToMillisats(amount),
                 memo
             )
-            handleRunReturn(makeInvoice, mqttClient!!)
+            handleRunReturn(makeInvoice, mqttClient)
 
             val invoice = makeInvoice.invoice
 
@@ -631,7 +635,7 @@ class ConnectManagerImpl: ConnectManager()
                 ownerInfoStateFlow.value?.picture ?: "",
                 false // not implemented on tribes yet
             )
-            handleRunReturn(processInvoice, mqttClient!!)
+            handleRunReturn(processInvoice, mqttClient)
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "processInvoicePayment ${e.message}")
         }
@@ -656,7 +660,7 @@ class ConnectManagerImpl: ConnectManager()
                 tribeServerPubKey,
                 tribePubKey
             )
-            handleRunReturn(tribeMembers, mqttClient!!)
+            handleRunReturn(tribeMembers, mqttClient)
         }
         catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "tribeMembers ${e.message}")
@@ -674,7 +678,7 @@ class ConnectManagerImpl: ConnectManager()
                 limit.toUInt(),
                 true,
             )
-            handleRunReturn(fetchMessages, mqttClient!!)
+            handleRunReturn(fetchMessages, mqttClient)
 
             notifyListeners {
                 onRestoreNextPageMessages(totalHighestIndex ?: 0, limit)
@@ -694,7 +698,7 @@ class ConnectManagerImpl: ConnectManager()
                 null,
                 false
             )
-            handleRunReturn(fetchFirstMsg, mqttClient!!)
+            handleRunReturn(fetchFirstMsg, mqttClient)
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "fetchFirstMessagesPerKey ${e.message}")
         }
@@ -707,7 +711,7 @@ class ConnectManagerImpl: ConnectManager()
                 getTimestampInMilliseconds(),
                 getCurrentUserState()
             )
-            handleRunReturn(messageAmount, mqttClient!!)
+            handleRunReturn(messageAmount, mqttClient)
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "getAllMessagesCount ${e.message}")
         }
@@ -739,7 +743,7 @@ class ConnectManagerImpl: ConnectManager()
                 getCurrentUserState(),
                 deviceId
             )
-            handleRunReturn(token, mqttClient!!)
+            handleRunReturn(token, mqttClient)
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "setOwnerDeviceId ${e.message}")
         }
@@ -818,7 +822,7 @@ class ConnectManagerImpl: ConnectManager()
                 contactPubKey,
                 messageIndex.toULong()
             )
-            handleRunReturn(readMessage, mqttClient!!)
+            handleRunReturn(readMessage, mqttClient)
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "readMessage ${e.message}")
         }
@@ -831,7 +835,7 @@ class ConnectManagerImpl: ConnectManager()
                 getTimestampInMilliseconds(),
                 getCurrentUserState()
             )
-            handleRunReturn(readMessages, mqttClient!!)
+            handleRunReturn(readMessages, mqttClient)
         } catch (e: Exception) {
             Log.e("MQTT_MESSAGES", "getReadMessages ${e.message}")
         }
@@ -861,185 +865,189 @@ class ConnectManagerImpl: ConnectManager()
         }
     }
 
-    private fun handleRunReturn(rr: RunReturn, client: MqttAsyncClient) {
-        // Set updated state into db
-        rr.stateMp?.let {
-            storeUserState(it)
-            Log.d("MQTT_MESSAGES", "=> stateMp $it")
-        }
-
-        // Publish to topics based on the new array structure
-        rr.topics.forEachIndexed { index, topic ->
-            val payload = rr.payloads.getOrElse(index) { ByteArray(0) }
-            client.publish(topic, MqttMessage(payload))
-            Log.d("MQTT_MESSAGES", "=> published to $topic")
-        }
-
-        // Set your balance
-        rr.newBalance?.let { newBalance ->
-            convertMillisatsToSats(newBalance)?.let { balance ->
-                notifyListeners {
-                    onNewBalance(balance)
-                }
+    private fun handleRunReturn(rr: RunReturn, client: MqttAsyncClient?) {
+        if (client != null) {
+            // Set updated state into db
+            rr.stateMp?.let {
+                storeUserState(it)
+                Log.d("MQTT_MESSAGES", "=> stateMp $it")
             }
-            Log.d("MQTT_MESSAGES", "===> BALANCE ${newBalance.toLong()}")
-        }
 
-        // Process each message in the new msgs array
-        if (rr.msgs.isNotEmpty()) {
+            // Publish to topics based on the new array structure
+            rr.topics.forEachIndexed { index, topic ->
+                val payload = rr.payloads.getOrElse(index) { ByteArray(0) }
+                client.publish(topic, MqttMessage(payload))
+                Log.d("MQTT_MESSAGES", "=> published to $topic")
+            }
 
-            if (restoreMnemonicWords?.isNotEmpty() == true)  {
-
-                val contactsToRestore = rr.msgs.filter {
-                    it.type?.toInt() == 33 || it.type?.toInt() == 11 || it.type?.toInt() == 10
-                }.map { it.sender }.distinct()
-
-                if (contactsToRestore.isNotEmpty()) {
+            // Set your balance
+            rr.newBalance?.let { newBalance ->
+                convertMillisatsToSats(newBalance)?.let { balance ->
                     notifyListeners {
-                        onRestoreContacts(contactsToRestore)
+                        onNewBalance(balance)
+                    }
+                }
+                Log.d("MQTT_MESSAGES", "===> BALANCE ${newBalance.toLong()}")
+            }
+
+            // Process each message in the new msgs array
+            if (rr.msgs.isNotEmpty()) {
+
+                if (restoreMnemonicWords?.isNotEmpty() == true) {
+
+                    val contactsToRestore = rr.msgs.filter {
+                        it.type?.toInt() == 33 || it.type?.toInt() == 11 || it.type?.toInt() == 10
+                    }.map { it.sender }.distinct()
+
+                    if (contactsToRestore.isNotEmpty()) {
+                        notifyListeners {
+                            onRestoreContacts(contactsToRestore)
+                        }
+                    }
+
+                    val tribesToRestore = rr.msgs.filter {
+                        it.type?.toInt() == 20 || it.type?.toInt() == 14
+                    }.map {
+                        Pair(it.sender, it.fromMe)
+                    }
+
+                    if (tribesToRestore.isNotEmpty()) {
+                        notifyListeners {
+                            onRestoreTribes(tribesToRestore)
+                        }
                     }
                 }
 
-                val tribesToRestore = rr.msgs.filter {
-                    it.type?.toInt() == 20 || it.type?.toInt() == 14
-                }.map {
-                    Pair(it.sender, it.fromMe)
-                }
-
-                if (tribesToRestore.isNotEmpty()) {
+                rr.msgs.forEach { msg ->
                     notifyListeners {
-                        onRestoreTribes(tribesToRestore)
+                        onMessage(
+                            msg.message.orEmpty(),
+                            msg.sender.orEmpty(),
+                            msg.type?.toInt() ?: 0,
+                            msg.uuid.orEmpty(),
+                            msg.index.orEmpty(),
+                            msg.timestamp?.toLong(),
+                            msg.sentTo.orEmpty(),
+                            msg.msat?.let { convertMillisatsToSats(it) },
+                            msg.fromMe
+                        )
                     }
                 }
             }
 
-            rr.msgs.forEach { msg ->
+            // Handling new tribe and tribe members
+            rr.newTribe?.let { newTribe ->
                 notifyListeners {
-                    onMessage(
-                        msg.message.orEmpty(),
-                        msg.sender.orEmpty(),
-                        msg.type?.toInt() ?: 0,
-                        msg.uuid.orEmpty(),
-                        msg.index.orEmpty(),
-                        msg.timestamp?.toLong(),
-                        msg.sentTo.orEmpty(),
-                        msg.msat?.let { convertMillisatsToSats(it) },
-                        msg.fromMe
-                    )
+                    onNewTribeCreated(newTribe)
                 }
+                Log.d("MQTT_MESSAGES", "===> newTribe $newTribe")
             }
-        }
 
-        // Handling new tribe and tribe members
-        rr.newTribe?.let { newTribe ->
-            notifyListeners {
-                onNewTribeCreated(newTribe)
-            }
-            Log.d("MQTT_MESSAGES", "===> newTribe $newTribe")
-        }
-
-        rr.tribeMembers?.let { tribeMembers ->
-            notifyListeners {
-                onTribeMembersList(tribeMembers)
-            }
-            Log.d("MQTT_MESSAGES", "=> tribeMembers $tribeMembers")
-        }
-
-        // Handling my contact info
-        rr.myContactInfo?.let { myContactInfo ->
-            val parts = myContactInfo.split("_", limit = 2)
-            val okKey = parts.getOrNull(0)
-            val routeHint = parts.getOrNull(1)
-            val isRestoreAccount = restoreMnemonicWords?.isNotEmpty() == true
-
-            if (okKey != null && routeHint != null) {
+            rr.tribeMembers?.let { tribeMembers ->
                 notifyListeners {
-                    onOwnerRegistered(okKey, routeHint, isRestoreAccount)
+                    onTribeMembersList(tribeMembers)
                 }
-            }
-            Log.d("MQTT_MESSAGES", "=> my_contact_info $myContactInfo")
-        }
-
-        // Handling new invite created
-        rr.newInvite?.let { invite ->
-            notifyListeners {
-                onNewInviteCreated(invite)
-            }
-            Log.d("MQTT_MESSAGES", "=> new_invite $invite")
-        }
-
-        rr.inviterContactInfo?.let { inviterInfo ->
-            val parts = inviterInfo.split("_")
-            val okKey = parts.getOrNull(0)?.toLightningNodePubKey()
-            val routeHint = "${parts.getOrNull(1)}_${parts.getOrNull(2)}".toLightningRouteHint()
-
-            val code = codeFromInvite(inviteCode!!)
-
-            inviterContact = NewContact(
-                null,
-                okKey,
-                routeHint,
-                null,
-                false,
-                null,
-                code,
-                null
-            )
-
-            subscribeOwnerMQTT()
-
-            Log.d("MQTT_MESSAGES", "=> inviterInfo $inviterInfo")
-        }
-
-        rr.msgsCounts?.let { msgsCounts ->
-            notifyListeners {
-                onMessagesCounts(msgsCounts)
-            }
-            Log.d("MQTT_MESSAGES", "=> msgsCounts $msgsCounts")
-        }
-
-        rr.msgsTotal?.let { msgsTotal ->
-            Log.d("MQTT_MESSAGES", "=> msgsTotal $msgsTotal")
-        }
-
-        rr.lastRead?.let { lastRead ->
-            notifyListeners {
-                onLastReadMessages(lastRead)
-            }
-            Log.d("MQTT_MESSAGES", "=> lastRead $lastRead")
-        }
-
-        rr.initialTribe?.let { initialTribe ->
-            // Call joinTribe with the url that comes on initialTribe
-            inviteInitialTribe = initialTribe
-            Log.d("MQTT_MESSAGES", "=> initialTribe $initialTribe")
-        }
-
-        rr.stateToDelete.let {
-            notifyListeners {
-                onDeleteUserState(it)
+                Log.d("MQTT_MESSAGES", "=> tribeMembers $tribeMembers")
             }
 
-            Log.d("MQTT_MESSAGES", "=> stateToDelete $it")
-        }
+            // Handling my contact info
+            rr.myContactInfo?.let { myContactInfo ->
+                val parts = myContactInfo.split("_", limit = 2)
+                val okKey = parts.getOrNull(0)
+                val routeHint = parts.getOrNull(1)
+                val isRestoreAccount = restoreMnemonicWords?.isNotEmpty() == true
 
-        // Handling other properties like sentStatus, settledStatus, error, etc.
-        rr.error?.let { error ->
-            Log.d("MQTT_MESSAGES", "=> error $error")
-        }
+                if (okKey != null && routeHint != null) {
+                    notifyListeners {
+                        onOwnerRegistered(okKey, routeHint, isRestoreAccount)
+                    }
+                }
+                Log.d("MQTT_MESSAGES", "=> my_contact_info $myContactInfo")
+            }
 
-        // Sent
-        rr.sentStatus?.let { sentStatus ->
-            Log.d("MQTT_MESSAGES", "=> sent_status $sentStatus")
-        }
+            // Handling new invite created
+            rr.newInvite?.let { invite ->
+                notifyListeners {
+                    onNewInviteCreated(invite)
+                }
+                Log.d("MQTT_MESSAGES", "=> new_invite $invite")
+            }
 
-        // Settled
-        rr.settledStatus?.let { settledStatus ->
-            Log.d("MQTT_MESSAGES", "=> settled_status $settledStatus")
-        }
+            rr.inviterContactInfo?.let { inviterInfo ->
+                val parts = inviterInfo.split("_")
+                val okKey = parts.getOrNull(0)?.toLightningNodePubKey()
+                val routeHint = "${parts.getOrNull(1)}_${parts.getOrNull(2)}".toLightningRouteHint()
 
-        rr.lspHost?.let { lspHost ->
-            mixerIp = lspHost
+                val code = codeFromInvite(inviteCode!!)
+
+                inviterContact = NewContact(
+                    null,
+                    okKey,
+                    routeHint,
+                    null,
+                    false,
+                    null,
+                    code,
+                    null
+                )
+
+                subscribeOwnerMQTT()
+
+                Log.d("MQTT_MESSAGES", "=> inviterInfo $inviterInfo")
+            }
+
+            rr.msgsCounts?.let { msgsCounts ->
+                notifyListeners {
+                    onMessagesCounts(msgsCounts)
+                }
+                Log.d("MQTT_MESSAGES", "=> msgsCounts $msgsCounts")
+            }
+
+            rr.msgsTotal?.let { msgsTotal ->
+                Log.d("MQTT_MESSAGES", "=> msgsTotal $msgsTotal")
+            }
+
+            rr.lastRead?.let { lastRead ->
+                notifyListeners {
+                    onLastReadMessages(lastRead)
+                }
+                Log.d("MQTT_MESSAGES", "=> lastRead $lastRead")
+            }
+
+            rr.initialTribe?.let { initialTribe ->
+                // Call joinTribe with the url that comes on initialTribe
+                inviteInitialTribe = initialTribe
+                Log.d("MQTT_MESSAGES", "=> initialTribe $initialTribe")
+            }
+
+            rr.stateToDelete.let {
+                notifyListeners {
+                    onDeleteUserState(it)
+                }
+
+                Log.d("MQTT_MESSAGES", "=> stateToDelete $it")
+            }
+
+            // Handling other properties like sentStatus, settledStatus, error, etc.
+            rr.error?.let { error ->
+                Log.d("MQTT_MESSAGES", "=> error $error")
+            }
+
+            // Sent
+            rr.sentStatus?.let { sentStatus ->
+                Log.d("MQTT_MESSAGES", "=> sent_status $sentStatus")
+            }
+
+            // Settled
+            rr.settledStatus?.let { settledStatus ->
+                Log.d("MQTT_MESSAGES", "=> settled_status $settledStatus")
+            }
+
+            rr.lspHost?.let { lspHost ->
+                mixerIp = lspHost
+            }
+        } else {
+            // MQTT ERROR
         }
 
     }
