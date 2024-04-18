@@ -2,8 +2,10 @@ package chat.sphinx.dashboard.ui
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.motion.widget.MotionLayout
@@ -26,15 +28,19 @@ import chat.sphinx.concept_signer_manager.SignerManager
 import chat.sphinx.dashboard.R
 import chat.sphinx.dashboard.databinding.FragmentDashboardBinding
 import chat.sphinx.dashboard.ui.viewstates.*
-import chat.sphinx.dashboard.ui.viewstates.DashboardMotionViewState
 import chat.sphinx.insetter_activity.InsetterActivity
 import chat.sphinx.insetter_activity.addNavigationBarPadding
 import chat.sphinx.insetter_activity.addStatusBarPadding
+import chat.sphinx.kotlin_response.LoadResponse
+import chat.sphinx.kotlin_response.Response
 import chat.sphinx.menu_bottom_scanner.BottomScannerMenu
 import chat.sphinx.resources.databinding.LayoutPodcastPlayerFooterBinding
-import chat.sphinx.wrapper_view.Px
 import chat.sphinx.swipe_reveal_layout.SwipeRevealLayout
+import chat.sphinx.wrapper_common.HideBalance
+import chat.sphinx.wrapper_common.chat.PushNotificationLink
 import chat.sphinx.wrapper_common.lightning.*
+import chat.sphinx.wrapper_lightning.NodeBalance
+import chat.sphinx.wrapper_view.Px
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import io.matthewnelson.android_feature_screens.ui.motionlayout.MotionLayoutFragment
@@ -46,6 +52,7 @@ import io.matthewnelson.concept_views.viewstate.value
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -111,10 +118,28 @@ internal class DashboardFragment : MotionLayoutFragment<
         super.onResume()
         viewModel.initOwner()
 
+        handleDeepLinks()
+        handlePushNotification()
+
+        activity?.intent = null
+    }
+
+    private fun handleDeepLinks() {
         activity?.intent?.dataString?.let { deepLink ->
             viewModel.handleDeepLink(deepLink)
             activity?.intent?.data = null
         }
+    }
+
+    private fun handlePushNotification() {
+        val chatId = activity?.intent?.extras?.getString("chat_id")?.toLongOrNull() ?: activity?.intent?.extras?.getLong("chat_id")
+        chatId?.let { nnChatId ->
+            viewModel.handleDeepLink(
+                PushNotificationLink("sphinx.chat://?action=push&chatId=$nnChatId").value
+            )
+        }
+
+        activity?.intent = null
     }
 
     override fun onRefresh() {
@@ -258,6 +283,10 @@ internal class DashboardFragment : MotionLayoutFragment<
             header.textViewDashboardHeaderNetwork.setOnClickListener {
                 viewModel.toastIfNetworkConnected()
             }
+
+            header.textViewDashboardHeaderBalance.setOnClickListener {
+                viewModel.toggleHideBalanceState()
+            }
         }
     }
 
@@ -352,6 +381,10 @@ internal class DashboardFragment : MotionLayoutFragment<
                 .addNavigationBarPadding(navDrawer.layoutConstraintDashboardNavDrawer)
 
             navDrawer.layoutConstraintDashboardNavDrawer.setOnClickListener { viewModel }
+
+            navDrawer.navDrawerTextViewSatsBalance.setOnClickListener {
+                viewModel.toggleHideBalanceState()
+            }
 
             navDrawer.navDrawerButtonContacts.setOnClickListener {
                 lifecycleScope.launch { viewModel.navDrawerNavigator.toAddressBookScreen() }
@@ -460,12 +493,38 @@ internal class DashboardFragment : MotionLayoutFragment<
         }
 
         onStopSupervisor.scope.launch(viewModel.mainImmediate) {
-            viewModel.getAccountBalance().collect { nodeBalance ->
-                if (nodeBalance == null) return@collect
+            combine(
+                viewModel.hideBalanceStateFlow,
+                viewModel.getAccountBalance()
+            ) { hideBalanceState: Int, nodeBalance: NodeBalance? ->
+                BalanceState(nodeBalance, hideBalanceState)
+            }.collect { balanceState ->
 
-                nodeBalance.balance.asFormattedString().let { balance ->
-                    binding.layoutDashboardHeader.textViewDashboardHeaderBalance.text = balance
-                    binding.layoutDashboardNavDrawer.navDrawerTextViewSatsBalance.text = balance
+                Log.d(
+                    "DashboardFrag",
+                    "onStart: ShouldHide Balance: ${balanceState.hideBalanceState == HideBalance.ENABLED}")
+                if (balanceState.nodeBalance == null) return@collect
+                balanceState.nodeBalance.balance.asFormattedString().let { balance ->
+                    with(binding.layoutDashboardHeader.textViewDashboardHeaderBalance){
+                        if (balanceState.hideBalanceState == HideBalance.ENABLED){
+                            layoutParams.height = resources.getDimensionPixelSize(R.dimen.hidden_balance_placeholder)
+                            text = "*****"
+                        }
+                        else {
+                            layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                            text = balance
+                        }
+                    }
+                    with(binding.layoutDashboardNavDrawer.navDrawerTextViewSatsBalance){
+                        if (balanceState.hideBalanceState == HideBalance.ENABLED){
+                            layoutParams.height = resources.getDimensionPixelSize(R.dimen.hidden_nav_balance_placeholder)
+                            text = "*****"
+                        }
+                        else {
+                            layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                            text = balance
+                        }
+                    }
                 }
             }
         }

@@ -12,7 +12,7 @@ android {
 
     buildFeatures.viewBinding = true
     defaultConfig {
-        applicationId "chat.sphinx"
+        applicationId "chat.sphinx.v2"
         minSdkVersion versions.minSdk
         targetSdkVersion versions.targetSdk
         versionCode VERSION_CODE.toInteger()

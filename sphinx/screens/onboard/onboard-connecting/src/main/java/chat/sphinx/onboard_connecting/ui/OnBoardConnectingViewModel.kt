@@ -251,6 +251,8 @@ internal class OnBoardConnectingViewModel @Inject constructor(
 
                         is Response.Success -> {
                             transportKey = RsaPublicKey(loadResponse.value.transport_key.toCharArray())
+
+                            relayDataHandler.persistRelayTransportKey(transportKey)
                         }
                     }
                 }

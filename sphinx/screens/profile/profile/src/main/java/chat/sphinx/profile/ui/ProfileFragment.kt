@@ -278,6 +278,10 @@ internal class ProfileFragment: SideEffectFragment<
                     viewModel.resetPIN()
                 }
 
+                buttonProfileDeleteAccount.setOnClickListener {
+                    viewModel.deleteAccount()
+                }
+
                 includeProfileBasicContainerHolder.layoutConstraintProfileBasicContainerManageStorage.setOnClickListener {
                     lifecycleScope.launch(viewModel.mainImmediate) {
                         profileNavigator.toManageStorageDetail()
