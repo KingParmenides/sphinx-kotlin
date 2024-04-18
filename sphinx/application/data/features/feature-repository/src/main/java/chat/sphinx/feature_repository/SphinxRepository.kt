@@ -417,24 +417,12 @@ abstract class SphinxRepository(
         tribeServerPubKey: String?
     ) {
         applicationScope.launch(io) {
-            val invite = connectManager.createInvite(
+            connectManager.createInvite(
                 nickname,
                 welcomeMessage,
                 sats,
                 tribeServerPubKey
             )
-
-            val newInvitee = NewContact(
-                contactAlias = nickname.toContactAlias(),
-                lightningNodePubKey = null,
-                lightningRouteHint = null,
-                photoUrl = null,
-                confirmed = false,
-                inviteString = invite?.first,
-                inviteCode = invite?.second,
-                invitePrice = sats.toSat()
-            )
-            createNewContact(newInvitee)
         }
     }
 
@@ -521,7 +509,8 @@ abstract class SphinxRepository(
                 confirmed = contactInfo.confirmed,
                 null,
                 inviteCode = contactInfo.code,
-                invitePrice = null
+                invitePrice = null,
+                null,
             )
 
             if (contactInfo.code != null) {
@@ -686,7 +675,8 @@ abstract class SphinxRepository(
                     confirmed = contactInfo.confirmed,
                     null,
                     inviteCode = contactInfo.code,
-                    invitePrice = null
+                    invitePrice = null,
+                    null,
                 )
             }
 
@@ -888,9 +878,30 @@ abstract class SphinxRepository(
     }
 
 
-    override fun onNewInviteCreated(inviteString: String) {
-        // Create the invite and save it to the database. inviteDbo.
-        connectionManagerState.value = ConnectionManagerState.NewInviteCode(inviteString)
+    override fun onNewInviteCreated(
+        nickname: String,
+        confirmed: Boolean,
+        inviteString: String,
+        inviteCode: String,
+        sats: Long
+    ) {
+        applicationScope.launch(io) {
+            // Create the invite and save it to the database. inviteDbo.
+//            connectionManagerState.value = ConnectionManagerState.NewInviteCode(inviteString)
+
+            val newInvitee = NewContact(
+                contactAlias = nickname.toContactAlias(),
+                lightningNodePubKey = null,
+                lightningRouteHint = null,
+                photoUrl = null,
+                confirmed = false,
+                inviteString = inviteString,
+                inviteCode = inviteCode,
+                invitePrice = sats.toSat(),
+                inviteStatus = if (confirmed) InviteStatus.Pending else InviteStatus.Expired,
+            )
+            createNewContact(newInvitee)
+            }
     }
 
     override suspend fun updateLspAndOwner(data: String) {
@@ -2883,7 +2894,7 @@ abstract class SphinxRepository(
                         inviteCode = InviteCode(contact.inviteCode ?: ""),
                         paymentRequest = null,
                         contactId = ContactId(contactId ?: -1L),
-                        status = InviteStatus.Pending,
+                        status = contact.inviteStatus ?: InviteStatus.Expired,
                         price = contact.invitePrice,
                         createdAt = now.toDateTime()
                     )

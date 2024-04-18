@@ -48,5 +48,6 @@ dependencies {
     implementation deps.msgpack.sdk
     implementation deps.square.moshi
     implementation deps.msgpack.sdk
+    implementation project(path: ':sphinx:application:common:wrappers:wrapper-mqtt')
 
 }
