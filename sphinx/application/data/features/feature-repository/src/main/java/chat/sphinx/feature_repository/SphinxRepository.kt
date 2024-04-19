@@ -880,7 +880,6 @@ abstract class SphinxRepository(
 
     override fun onNewInviteCreated(
         nickname: String,
-        confirmed: Boolean,
         inviteString: String,
         inviteCode: String,
         sats: Long
@@ -898,10 +897,10 @@ abstract class SphinxRepository(
                 inviteString = inviteString,
                 inviteCode = inviteCode,
                 invitePrice = sats.toSat(),
-                inviteStatus = if (confirmed) InviteStatus.Pending else InviteStatus.Expired,
+                inviteStatus = InviteStatus.Pending,
             )
             createNewContact(newInvitee)
-            }
+        }
     }
 
     override suspend fun updateLspAndOwner(data: String) {

@@ -1046,14 +1046,18 @@ class ConnectManagerImpl: ConnectManager()
                 val tagAndStatus = extractTagAndStatus(sentStatus)
 
                 if (tagAndStatus?.first == currentInvite?.tag) {
-                    notifyListeners {
-                        onNewInviteCreated(
-                            currentInvite?.nickname.orEmpty(),
-                            tagAndStatus?.second ?: false,
-                            currentInvite?.inviteString ?: "",
-                            currentInvite?.inviteCode ?: "" ,
-                            currentInvite?.invitePrice ?: 0L,
-                        )
+                    if (tagAndStatus?.second == true) {
+                        notifyListeners {
+                            onNewInviteCreated(
+                                currentInvite?.nickname.orEmpty(),
+                                currentInvite?.inviteString ?: "",
+                                currentInvite?.inviteCode ?: "",
+                                currentInvite?.invitePrice ?: 0L,
+                            )
+                        }
+                    }
+                    else {
+                        // Handle invite error
                     }
                     currentInvite = null
                 }

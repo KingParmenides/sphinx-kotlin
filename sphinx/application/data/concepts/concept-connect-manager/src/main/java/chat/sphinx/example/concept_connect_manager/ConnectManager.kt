@@ -126,7 +126,6 @@ interface ConnectManagerListener {
     fun listenToOwnerCreation(callback: () -> Unit)
     fun onNewInviteCreated(
         nickname: String,
-        confirmed: Boolean,
         inviteString: String,
         inviteCode: String,
         sats: Long
